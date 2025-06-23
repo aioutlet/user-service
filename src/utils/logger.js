@@ -1,4 +1,5 @@
 import winston from 'winston';
+import { colorizeLevel } from './colorize.js';
 
 // Log level and transport config from env
 const logLevel = process.env.LOG_LEVEL || 'info';
@@ -12,7 +13,13 @@ const transports = [];
 if (logToConsole) {
   transports.push(
     new winston.transports.Console({
-      format: winston.format.simple(),
+      format: winston.format.combine(
+        winston.format.printf(({ level, message, timestamp, ...meta }) => {
+          const ts = timestamp || new Date().toISOString();
+          const metaStr = Object.keys(meta).length ? JSON.stringify(meta) : '';
+          return colorizeLevel(level, `[${ts}] [${level.toUpperCase()}] ${message} ${metaStr}`);
+        })
+      ),
       silent: isTest, // Silence logs in test
     })
   );
