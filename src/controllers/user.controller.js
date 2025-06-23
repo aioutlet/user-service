@@ -2,15 +2,7 @@ import logger from '../utils/logger.js';
 import User from '../models/user.model.js';
 import asyncHandler from '../middlewares/asyncHandler.js';
 import userValidator from '../validators/user.validator.js';
-
-// Helper to throw errors in standard format
-function createError({ status = 500, code = 'INTERNAL_ERROR', message = 'Internal server error', details = null }) {
-  const err = new Error(message);
-  err.status = status;
-  err.code = code;
-  err.details = details;
-  return err;
-}
+import { createError } from '../utils/error.js';
 
 // @desc    Create a new user
 // @route   POST /users
