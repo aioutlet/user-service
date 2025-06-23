@@ -1,5 +1,10 @@
+import mongoose from 'mongoose';
+
 // User input validation utility
 const userValidator = {
+  isValidObjectId(id) {
+    return mongoose.Types.ObjectId.isValid(id);
+  },
   isValidEmail(email) {
     // Must be string, trimmed, valid email, min 5, max 100
     return (

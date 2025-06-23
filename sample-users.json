@@ -21,6 +21,6 @@
     "name": "Admin",
     "roles": ["admin"],
     "isEmailVerified": true,
-    "isActive": false
+    "isActive": true
   }
 ]

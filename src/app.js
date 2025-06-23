@@ -1,6 +1,7 @@
 import express from 'express';
 import connectDB from './config/db.js';
 import userRoutes from './routes/user.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 import './utils/tracing.js';
 import cookieParser from 'cookie-parser';
 import logger from './utils/logger.js';
@@ -12,6 +13,7 @@ app.use(cookieParser());
 await connectDB();
 
 app.use('/users', userRoutes);
+app.use('/admin/users', adminRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'User Service API' });

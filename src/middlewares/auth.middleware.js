@@ -21,7 +21,7 @@ export function requireAuth(req, res, next) {
   }
   if (!token) {
     logger.warn('requireAuth: No token found');
-    return res.status(401).json({ error: 'Unauthorized' });
+    return res.status(401).json({ error: 'Unauthorized: No token found in Authorization header or cookies' });
   }
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
@@ -32,20 +32,20 @@ export function requireAuth(req, res, next) {
     };
   } catch (err) {
     logger.warn('requireAuth: Invalid token', { error: err });
-    return res.status(401).json({ error: 'Unauthorized' });
+    return res.status(401).json({ error: 'Unauthorized: Invalid or expired token', details: err.message });
   }
   // Check if user is active
   User.findById(req.user._id)
     .then((user) => {
       if (!user || user.isActive === false) {
         logger.warn('requireAuth: User not found or deactivated', { userId: req.user._id });
-        return res.status(403).json({ error: 'Account is deactivated.' });
+        return res.status(403).json({ error: 'Account is deactivated or user not found' });
       }
       next();
     })
     .catch((err) => {
       logger.warn('requireAuth: DB error', { error: err });
-      res.status(401).json({ error: 'Unauthorized' });
+      res.status(401).json({ error: 'Unauthorized: Database error', details: err.message });
     });
 }
 
