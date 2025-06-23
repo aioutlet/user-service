@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import User from './src/models/user.model.js';
 import bcrypt from 'bcrypt';
 import fs from 'fs';
+import logger from './src/utils/logger.js';
 
 dotenv.config();
 
@@ -23,7 +24,7 @@ if (MONGODB_DB_PARAMS) {
   mongodb_uri += `?${MONGODB_DB_PARAMS}`;
 }
 
-console.log(`MongoDB URI: ${mongodb_uri}`);
+logger.info(`MongoDB URI: ${mongodb_uri}`);
 
 async function seed() {
   await mongoose.connect(mongodb_uri);
@@ -32,7 +33,7 @@ async function seed() {
     user.password = await bcrypt.hash(user.password, 10);
   }
   await User.insertMany(users);
-  console.log('Seeded users!');
+  logger.info('Seeded users!');
   await mongoose.disconnect();
 }
 

@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { requireEnv } from '../utils/requireEnv.js';
 import User from '../models/user.model.js';
+import logger from '../utils/logger.js';
 
 const JWT_SECRET = requireEnv('JWT_SECRET');
 
@@ -19,7 +20,7 @@ export function requireAuth(req, res, next) {
     token = req.cookies.jwt;
   }
   if (!token) {
-    console.warn('requireAuth: No token found');
+    logger.warn('requireAuth: No token found');
     return res.status(401).json({ error: 'Unauthorized' });
   }
   try {
@@ -30,20 +31,20 @@ export function requireAuth(req, res, next) {
       roles: decoded.roles,
     };
   } catch (err) {
-    console.warn('requireAuth: Invalid token', err);
+    logger.warn('requireAuth: Invalid token', { error: err });
     return res.status(401).json({ error: 'Unauthorized' });
   }
   // Check if user is active
   User.findById(req.user._id)
     .then((user) => {
       if (!user || user.isActive === false) {
-        console.warn('requireAuth: User not found or deactivated', req.user._id);
+        logger.warn('requireAuth: User not found or deactivated', { userId: req.user._id });
         return res.status(403).json({ error: 'Account is deactivated.' });
       }
       next();
     })
     .catch((err) => {
-      console.warn('requireAuth: DB error', err);
+      logger.warn('requireAuth: DB error', { error: err });
       res.status(401).json({ error: 'Unauthorized' });
     });
 }

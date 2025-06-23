@@ -1,17 +1,13 @@
-console.log('JWT_SECRET in app.js:', process.env.JWT_SECRET);
-
 import express from 'express';
 import connectDB from './config/db.js';
 import userRoutes from './routes/user.routes.js';
 import './utils/tracing.js';
 import cookieParser from 'cookie-parser';
-// import { checkRequiredEnv } from './utils/requireEnv.js';
+import logger from './utils/logger.js';
 
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
-
-// checkRequiredEnv(['JWT_SECRET']);
 
 await connectDB();
 
@@ -35,4 +31,4 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`User service running on port ${PORT}`));
+app.listen(PORT, () => logger.info(`User service running on port ${PORT}`));

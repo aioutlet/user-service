@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import User from './src/models/user.model.js';
+import logger from './src/utils/logger.js';
 
 dotenv.config();
 
@@ -24,7 +25,7 @@ if (MONGODB_DB_PARAMS) {
 async function clear() {
   await mongoose.connect(mongodb_uri);
   await User.deleteMany({});
-  console.log('All users deleted!');
+  logger.info('All users deleted!');
   await mongoose.disconnect();
 }
 
