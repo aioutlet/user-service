@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import 'colors'; // Import colors for colored console output
 import logger from '../utils/logger.js';
 
 const connectDB = async () => {

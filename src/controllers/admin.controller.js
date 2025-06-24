@@ -1,7 +1,6 @@
 import User from '../models/user.model.js';
-import userValidator from '../validators/user.validator.js';
-import { createError } from '../utils/error.js';
 import asyncHandler from '../middlewares/asyncHandler.js';
+import * as userService from '../services/userService.js';
 
 /**
  * @desc    Get all users (admin only)
@@ -19,15 +18,12 @@ export const getUsers = asyncHandler(async (req, res, next) => {
  * @access  Admin only
  */
 export const getUser = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
-  if (!userValidator.isValidObjectId(id)) {
-    return next(createError({ status: 400, code: 'INVALID_ID', message: 'Invalid user ID' }));
+  try {
+    const user = await userService.getUserById(req.params.id);
+    res.json(user);
+  } catch (err) {
+    next(err);
   }
-  const user = await User.findById(id, '-password');
-  if (!user) {
-    return next(createError({ status: 404, code: 'USER_NOT_FOUND', message: 'User not found' }));
-  }
-  res.json(user);
 });
 
 /**
@@ -36,34 +32,11 @@ export const getUser = asyncHandler(async (req, res, next) => {
  * @access  Admin only
  */
 export const updateUser = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
-  const allowedFields = ['name', 'isEmailVerified', 'isActive', 'roles', 'social'];
-  const update = {};
-  for (const field of allowedFields) {
-    if (field in req.body) update[field] = req.body[field];
-  }
-  if (Object.keys(update).length === 0) {
-    return next(createError({ status: 400, code: 'NO_UPDATABLE_FIELDS', message: 'No updatable fields provided' }));
-  }
-  if ('name' in update && !userValidator.isValidName(update.name)) {
-    return next(createError({ status: 400, code: 'INVALID_NAME', message: 'Name is invalid' }));
-  }
-  if ('roles' in update && !userValidator.isValidRoles(update.roles)) {
-    return next(
-      createError({ status: 400, code: 'INVALID_ROLES', message: 'Roles must be an array of non-empty strings.' })
-    );
-  }
   try {
-    const user = await User.findByIdAndUpdate(id, update, { new: true });
-    if (!user) {
-      return next(createError({ status: 404, code: 'USER_NOT_FOUND', message: 'User not found' }));
-    }
-    res.json(user);
+    const result = await userService.updateUser(req.params.id, req.body, { isAdmin: true });
+    res.json(result);
   } catch (err) {
-    if (err.name === 'ValidationError') {
-      return next(createError({ status: 400, code: 'MONGOOSE_VALIDATION', message: err.message, details: err.errors }));
-    }
-    return next(err);
+    next(err);
   }
 });
 
@@ -73,10 +46,10 @@ export const updateUser = asyncHandler(async (req, res, next) => {
  * @access  Admin only
  */
 export const deleteUser = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
-  const user = await User.findByIdAndDelete(id);
-  if (!user) {
-    return next(createError({ status: 404, code: 'USER_NOT_FOUND', message: 'User not found' }));
+  try {
+    await userService.deleteUser(req.params.id);
+    res.status(204).send();
+  } catch (err) {
+    next(err);
   }
-  res.status(204).send();
 });
