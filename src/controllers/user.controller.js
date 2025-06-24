@@ -1,8 +1,8 @@
+import ErrorResponse from '../utils/ErrorResponse.js';
 import logger from '../utils/logger.js';
 import User from '../models/user.model.js';
 import asyncHandler from '../middlewares/asyncHandler.js';
 import userValidator from '../validators/user.validator.js';
-import { createError } from '../utils/error.js';
 import * as userService from '../services/userService.js';
 
 // @desc    Create a new user
@@ -12,23 +12,14 @@ export const createUser = asyncHandler(async (req, res, next) => {
   let { email, password, name, roles, social } = req.body;
 
   if (!userValidator.isValidEmail(email))
-    return next(
-      createError({ status: 400, code: 'INVALID_EMAIL', message: 'Email is required, must be valid, 5-100 chars.' })
-    );
+    return next(new ErrorResponse('Email is required, must be valid, 5-100 chars.', 400, 'INVALID_EMAIL'));
 
   // If this is a local registration (no social), require password and name
   if (!social) {
     const passwordValidation = userValidator.isValidPassword(password);
-    if (!passwordValidation.valid)
-      return next(
-        createError({
-          status: 400,
-          code: 'INVALID_PASSWORD',
-          message: passwordValidation.error,
-        })
-      );
+    if (!passwordValidation.valid) return next(new ErrorResponse(passwordValidation.error, 400, 'INVALID_PASSWORD'));
     if (!userValidator.isValidName(name))
-      return next(createError({ status: 400, code: 'INVALID_NAME', message: 'Name required, 2-50 chars.' }));
+      return next(new ErrorResponse('Name required, 2-50 chars.', 400, 'INVALID_NAME'));
   } else {
     // For social login, provide a default name if not present
     if (!name || typeof name !== 'string' || name.trim().length < 2) {
@@ -39,13 +30,11 @@ export const createUser = asyncHandler(async (req, res, next) => {
   }
 
   if (roles && !userValidator.isValidRoles(roles))
-    return next(
-      createError({ status: 400, code: 'INVALID_ROLES', message: 'Roles must be an array of non-empty strings.' })
-    );
+    return next(new ErrorResponse('Roles must be an array of non-empty strings.', 400, 'INVALID_ROLES'));
   // Check for duplicate email
   const existingUser = await User.findOne({ email });
   if (existingUser) {
-    return next(createError({ status: 409, code: 'EMAIL_EXISTS', message: 'Email already exists' }));
+    return next(new ErrorResponse('Email already exists', 409, 'EMAIL_EXISTS'));
   }
   logger.info(`Creating user: email=${email}`);
   try {
@@ -57,7 +46,7 @@ export const createUser = asyncHandler(async (req, res, next) => {
   } catch (err) {
     // Handle Mongoose validation errors
     if (err.name === 'ValidationError') {
-      return next(createError({ status: 400, code: 'MONGOOSE_VALIDATION', message: err.message, details: err.errors }));
+      return next(new ErrorResponse(err.message, 400, 'MONGOOSE_VALIDATION', { errors: err.errors }));
     }
     return next(err);
   }

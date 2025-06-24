@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import { requireEnv } from '../utils/requireEnv.js';
 import User from '../models/user.model.js';
 import logger from '../utils/logger.js';
+import ErrorResponse from '../utils/ErrorResponse.js';
 
 const JWT_SECRET = requireEnv('JWT_SECRET');
 
@@ -21,7 +22,7 @@ export function requireAuth(req, res, next) {
   }
   if (!token) {
     logger.warn('requireAuth: No token found');
-    return res.status(401).json({ error: 'Unauthorized: No token found in Authorization header or cookies' });
+    return next(new ErrorResponse('Unauthorized: No token found in Authorization header or cookies', 401));
   }
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
@@ -32,32 +33,19 @@ export function requireAuth(req, res, next) {
     };
   } catch (err) {
     logger.warn('requireAuth: Invalid token', { error: err });
-    return res.status(401).json({ error: 'Unauthorized: Invalid or expired token', details: err.message });
+    return next(new ErrorResponse('Unauthorized: Invalid or expired token', 401));
   }
   // Check if user is active
   User.findById(req.user._id)
     .then((user) => {
       if (!user || user.isActive === false) {
-        logger.warn('requireAuth: User not found or deactivated', { userId: req.user._id });
-        return res.status(403).json({ error: 'Account is deactivated or user not found' });
+        return next(new ErrorResponse('Forbidden: Account deactivated or not found', 403));
       }
+      req.user = user;
       next();
     })
     .catch((err) => {
-      logger.warn('requireAuth: DB error', { error: err });
-      res.status(401).json({ error: 'Unauthorized: Database error', details: err.message });
+      logger.error('requireAuth: DB error', { error: err });
+      return next(new ErrorResponse('Internal server error', 500));
     });
-}
-
-/**
- * Middleware to require one or more user roles (e.g., 'admin', 'user').
- * Responds with 403 Forbidden if the user does not have any of the required roles.
- */
-export function requireRole(...roles) {
-  return (req, res, next) => {
-    if (!req.user || !roles.some((role) => req.user.roles?.includes(role))) {
-      return res.status(403).json({ error: 'Forbidden: insufficient role' });
-    }
-    next();
-  };
 }

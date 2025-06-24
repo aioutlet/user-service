@@ -1,8 +1,8 @@
 // Middleware to require a specific user role (e.g., 'admin')
-export function requireRole(role) {
+export function requireRole(...roles) {
   return (req, res, next) => {
-    if (!req.user || !req.user.roles || !req.user.roles.includes(role)) {
-      return res.status(403).json({ error: 'Forbidden: insufficient role' });
+    if (!req.user || !roles.some((role) => req.user.roles?.includes(role))) {
+      return next(new ErrorResponse('Forbidden: insufficient role', 403));
     }
     next();
   };
