@@ -1,10 +1,12 @@
 import express from 'express';
-import connectDB from './config/db.js';
-import userRoutes from './routes/user.routes.js';
-import adminRoutes from './routes/admin.routes.js';
-import './utils/tracing.js';
 import cookieParser from 'cookie-parser';
+
+import connectDB from './config/db.js';
+import adminRoutes from './routes/admin.routes.js';
+import homeRoutes from './routes/home.routes.js';
+import userRoutes from './routes/user.routes.js';
 import logger from './utils/logger.js';
+import './utils/tracing.js';
 
 const app = express();
 app.use(express.json());
@@ -12,12 +14,9 @@ app.use(cookieParser());
 
 await connectDB();
 
-app.use('/users', userRoutes);
-app.use('/admin/users', adminRoutes);
-
-app.get('/', (req, res) => {
-  res.json({ message: 'User Service API' });
-});
+app.use('/api/home', homeRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/admin/users', adminRoutes);
 
 // Centralized error handler for consistent error responses
 app.use((err, req, res, next) => {
