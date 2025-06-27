@@ -1,0 +1,327 @@
+[
+  {
+    "email": "john.customer@example.com",
+    "password": "Password123!",
+    "firstName": "John",
+    "lastName": "Doe",
+    "displayName": "Johnny",
+    "roles": ["customer"],
+    "tier": "basic",
+    "isEmailVerified": true,
+    "isActive": true,
+    "addresses": [
+      {
+        "type": "shipping",
+        "addressLine1": "123 Main Street",
+        "city": "New York",
+        "state": "NY",
+        "zipCode": "10001",
+        "country": "US",
+        "isDefault": true
+      },
+      {
+        "type": "billing",
+        "addressLine1": "456 Business Ave",
+        "city": "New York",
+        "state": "NY",
+        "zipCode": "10002",
+        "country": "US",
+        "isDefault": false
+      }
+    ],
+    "paymentMethods": [
+      {
+        "type": "credit_card",
+        "provider": "visa",
+        "last4": "1234",
+        "expiryMonth": 12,
+        "expiryYear": 2025,
+        "cardholderName": "John Doe",
+        "isDefault": true
+      }
+    ],
+    "wishlist": [
+      {
+        "productId": "507f1f77bcf86cd799439011",
+        "productName": "Wireless Bluetooth Headphones",
+        "productPrice": 79.99,
+        "notes": "Want these for my daily commute"
+      },
+      {
+        "productId": "507f1f77bcf86cd799439012",
+        "productName": "Gaming Laptop",
+        "productPrice": 1299.99,
+        "notes": "Need for work and gaming"
+      }
+    ],
+    "preferences": {
+      "notifications": {
+        "email": true,
+        "sms": true
+      },
+      "theme": "light"
+    },
+    "social": {
+      "google": {
+        "id": "google123456789"
+      }
+    }
+  },
+  {
+    "email": "sarah.premium@example.com",
+    "password": "SecurePass456!",
+    "firstName": "Sarah",
+    "lastName": "Johnson",
+    "displayName": "Sarah J",
+    "roles": ["customer"],
+    "tier": "premium",
+    "isEmailVerified": true,
+    "isActive": true,
+    "addresses": [
+      {
+        "type": "shipping",
+        "addressLine1": "789 Oak Avenue",
+        "city": "Los Angeles",
+        "state": "CA",
+        "zipCode": "90210",
+        "country": "US",
+        "isDefault": true
+      }
+    ],
+    "paymentMethods": [
+      {
+        "type": "credit_card",
+        "provider": "mastercard",
+        "last4": "5678",
+        "expiryMonth": 8,
+        "expiryYear": 2026,
+        "cardholderName": "Sarah Johnson",
+        "isDefault": true
+      },
+      {
+        "type": "digital_wallet",
+        "provider": "paypal",
+        "last4": "1234",
+        "cardholderName": "Sarah Johnson",
+        "email": "sarah.premium@example.com",
+        "isDefault": false
+      }
+    ],
+    "wishlist": [
+      {
+        "productId": "507f1f77bcf86cd799439013",
+        "productName": "Designer Handbag",
+        "productPrice": 299.99,
+        "notes": "Perfect for special occasions"
+      }
+    ],
+    "preferences": {
+      "notifications": {
+        "email": true,
+        "sms": true
+      },
+      "theme": "dark"
+    }
+  },
+  {
+    "email": "mike.admin@example.com",
+    "password": "AdminPass789!",
+    "firstName": "Michael",
+    "lastName": "Smith",
+    "displayName": "Mike Admin",
+    "roles": ["admin", "customer"],
+    "tier": "gold",
+    "isEmailVerified": true,
+    "isActive": true,
+    "addresses": [
+      {
+        "type": "shipping",
+        "addressLine1": "321 Admin Street",
+        "city": "Chicago",
+        "state": "IL",
+        "zipCode": "60601",
+        "country": "US",
+        "isDefault": true
+      }
+    ],
+    "paymentMethods": [
+      {
+        "type": "credit_card",
+        "provider": "amex",
+        "last4": "9012",
+        "expiryMonth": 6,
+        "expiryYear": 2027,
+        "cardholderName": "Michael Smith",
+        "isDefault": true
+      }
+    ],
+    "wishlist": [],
+    "preferences": {
+      "notifications": {
+        "email": false,
+        "sms": false
+      },
+      "theme": "light"
+    }
+  },
+  {
+    "email": "emma.vendor@example.com",
+    "password": "VendorPass321!",
+    "firstName": "Emma",
+    "lastName": "Wilson",
+    "displayName": "Emma W",
+    "roles": ["vendor", "customer"],
+    "tier": "premium",
+    "isEmailVerified": true,
+    "isActive": true,
+    "addresses": [
+      {
+        "type": "work",
+        "addressLine1": "555 Commerce Drive",
+        "city": "Austin",
+        "state": "TX",
+        "zipCode": "73301",
+        "country": "US",
+        "isDefault": true
+      },
+      {
+        "type": "shipping",
+        "addressLine1": "777 Home Street",
+        "city": "Austin",
+        "state": "TX",
+        "zipCode": "73302",
+        "country": "US",
+        "isDefault": false
+      }
+    ],
+    "paymentMethods": [
+      {
+        "type": "bank_transfer",
+        "provider": "bank_transfer",
+        "last4": "3456",
+        "cardholderName": "Emma Wilson",
+        "accountType": "business",
+        "bankName": "First National Bank",
+        "isDefault": true
+      }
+    ],
+    "wishlist": [
+      {
+        "productId": "507f1f77bcf86cd799439014",
+        "productName": "Business Analytics Software",
+        "productPrice": 499.99,
+        "notes": "For inventory management"
+      }
+    ],
+    "preferences": {
+      "notifications": {
+        "email": true,
+        "sms": false
+      },
+      "theme": "light"
+    },
+    "social": {
+      "facebook": {
+        "id": "facebook987654321"
+      }
+    }
+  },
+  {
+    "email": "alex.support@example.com",
+    "password": "SupportPass654!",
+    "firstName": "Alex",
+    "lastName": "Brown",
+    "displayName": "Alex Support",
+    "roles": ["support", "customer"],
+    "tier": "basic",
+    "isEmailVerified": true,
+    "isActive": true,
+    "addresses": [
+      {
+        "type": "shipping",
+        "addressLine1": "888 Support Lane",
+        "city": "Seattle",
+        "state": "WA",
+        "zipCode": "98101",
+        "country": "US",
+        "isDefault": true
+      }
+    ],
+    "paymentMethods": [
+      {
+        "type": "debit_card",
+        "provider": "visa",
+        "last4": "7890",
+        "expiryMonth": 3,
+        "expiryYear": 2025,
+        "cardholderName": "Alex Brown",
+        "isDefault": true
+      }
+    ],
+    "wishlist": [
+      {
+        "productId": "507f1f77bcf86cd799439015",
+        "productName": "Ergonomic Office Chair",
+        "productPrice": 249.99,
+        "notes": "For better work setup"
+      }
+    ],
+    "preferences": {
+      "notifications": {
+        "email": false,
+        "sms": false
+      },
+      "theme": "dark"
+    }
+  },
+  {
+    "email": "inactive.user@example.com",
+    "password": "InactivePass999!",
+    "firstName": "Inactive",
+    "lastName": "User",
+    "displayName": "Inactive Account",
+    "roles": ["customer"],
+    "tier": "basic",
+    "isEmailVerified": false,
+    "isActive": true,
+    "addresses": [],
+    "paymentMethods": [],
+    "wishlist": [],
+    "preferences": {
+      "notifications": {
+        "email": false,
+        "sms": false
+      },
+      "theme": "light"
+    }
+  },
+  {
+    "email": "social.only@example.com",
+    "password": "SocialPass123!",
+    "firstName": "Social",
+    "lastName": "Login",
+    "displayName": "Social User",
+    "roles": ["customer"],
+    "tier": "basic",
+    "isEmailVerified": true,
+    "isActive": true,
+    "addresses": [],
+    "paymentMethods": [],
+    "wishlist": [],
+    "preferences": {
+      "notifications": {
+        "email": true,
+        "sms": false
+      },
+      "theme": "light"
+    },
+    "social": {
+      "google": {
+        "id": "google111222333"
+      },
+      "facebook": {
+        "id": "facebook444555666"
+      }
+    }
+  }
+]

@@ -1,5 +1,10 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
+import addressSchema from '../schemas/address.schema.js';
+import socialSchema from '../schemas/social.schema.js';
+import paymentSchema from '../schemas/payment.schema.js';
+import wishlistSchema from '../schemas/wishlist.schema.js';
+import preferencesSchema from '../schemas/preferences.schema.js';
 
 const userSchema = new mongoose.Schema(
   {
@@ -11,27 +16,40 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      // required: [true, 'Please add a password'],
       minlength: [6, 'Password must be between 6 and 100 characters'],
       maxlength: [100, 'Password must be between 6 and 100 characters'],
       trim: true,
     },
-    name: {
+    firstName: {
       type: String,
-      // required: [true, 'Please add a name'],
       trim: true,
-      minlength: [2, 'Name must be at least 2 characters'],
-      maxlength: [50, 'Name must be less than 50 characters'],
+      maxlength: [50, 'First name must be less than 50 characters'],
+    },
+    lastName: {
+      type: String,
+      trim: true,
+      maxlength: [50, 'Last name must be less than 50 characters'],
+    },
+    displayName: {
+      type: String,
+      trim: true,
+      maxlength: [100, 'Display name must be less than 100 characters'],
     },
     roles: {
       type: [String],
-      default: ['user'],
+      enum: ['customer', 'admin', 'vendor', 'moderator', 'support'],
+      default: ['customer'],
     },
-    social: {
-      google: { id: String },
-      facebook: { id: String },
-      twitter: { id: String },
+    tier: {
+      type: String,
+      enum: ['basic', 'premium', 'gold', 'platinum'],
+      default: 'basic',
     },
+    addresses: [addressSchema],
+    paymentMethods: [paymentSchema],
+    wishlist: [wishlistSchema],
+    preferences: preferencesSchema,
+    social: socialSchema,
     isEmailVerified: {
       type: Boolean,
       default: false,

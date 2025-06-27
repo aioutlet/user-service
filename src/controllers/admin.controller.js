@@ -1,6 +1,6 @@
 import User from '../models/user.model.js';
 import asyncHandler from '../middlewares/asyncHandler.js';
-import * as userService from '../services/userService.js';
+import * as userService from '../services/user.service.js';
 
 /**
  * @desc    Get all users (admin only)

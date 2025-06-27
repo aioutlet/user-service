@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import User from './src/models/user.model.js';
+import User from '../src/models/user.model.js';
 import bcrypt from 'bcrypt';
 import fs from 'fs';
-import logger from './src/utils/logger.js';
+import logger from '../src/utils/logger.js';
 
 dotenv.config();
 
@@ -28,7 +28,7 @@ logger.info(`MongoDB URI: ${mongodb_uri}`);
 
 async function seed() {
   await mongoose.connect(mongodb_uri);
-  const users = JSON.parse(fs.readFileSync('./sample-users.json', 'utf-8'));
+  const users = JSON.parse(fs.readFileSync('./scripts/sample-users.json', 'utf-8'));
   for (const user of users) {
     user.password = await bcrypt.hash(user.password, 10);
   }

@@ -29,13 +29,46 @@ const userValidator = {
     }
     return { valid: true };
   },
-  isValidName(name) {
-    // Must be string, trimmed, min 2, max 50
-    return typeof name === 'string' && name.trim().length >= 2 && name.trim().length <= 50;
+  isValidFirstName(firstName) {
+    // Optional field, but if provided must be valid
+    if (!firstName) return true;
+    return (
+      typeof firstName === 'string' &&
+      firstName.trim().length > 0 &&
+      firstName.trim().length <= 50 &&
+      /^[a-zA-Z\s\-'\.]+$/.test(firstName.trim())
+    );
+  },
+  isValidLastName(lastName) {
+    // Optional field, but if provided must be valid
+    if (!lastName) return true;
+    return (
+      typeof lastName === 'string' &&
+      lastName.trim().length > 0 &&
+      lastName.trim().length <= 50 &&
+      /^[a-zA-Z\s\-'\.]+$/.test(lastName.trim())
+    );
+  },
+  isValidDisplayName(displayName) {
+    // Optional field, but if provided must be valid
+    if (!displayName) return true;
+    return typeof displayName === 'string' && displayName.trim().length > 0 && displayName.trim().length <= 100;
   },
   isValidRoles(roles) {
-    // Must be array of non-empty strings
-    return Array.isArray(roles) && roles.every((r) => typeof r === 'string' && r.trim().length > 0);
+    // Must be array of valid role strings
+    const validRoles = ['customer', 'admin', 'vendor', 'moderator', 'support'];
+    return (
+      Array.isArray(roles) &&
+      roles.length > 0 &&
+      roles.every(
+        (role) => typeof role === 'string' && role.trim().length > 0 && validRoles.includes(role.trim().toLowerCase())
+      )
+    );
+  },
+  isValidTier(tier) {
+    // Must be a valid tier string
+    const validTiers = ['basic', 'premium', 'gold', 'platinum'];
+    return typeof tier === 'string' && tier.trim().length > 0 && validTiers.includes(tier.trim().toLowerCase());
   },
 };
 

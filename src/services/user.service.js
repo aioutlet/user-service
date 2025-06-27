@@ -1,4 +1,5 @@
 import User from '../models/user.model.js';
+import UserValidationUtility from '../validators/user.validation.utility.js';
 import userValidator from '../validators/user.validator.js';
 import ErrorResponse from '../utils/ErrorResponse.js';
 
@@ -9,42 +10,35 @@ export async function getUserById(userId) {
 }
 
 export async function updateUser(userId, updateFields, { isAdmin = false } = {}) {
-  const allowedFields = isAdmin
-    ? ['name', 'email', 'isEmailVerified', 'isActive', 'roles', 'social', 'password']
-    : ['name', 'isEmailVerified', 'isActive', 'password'];
-  const update = {};
-  for (const field of allowedFields) {
-    if (field in updateFields) update[field] = updateFields[field];
-  }
+  // Filter to only allowed fields
+  const update = UserValidationUtility.filterAllowedFields(updateFields, isAdmin);
+
   if (Object.keys(update).length === 0) {
     throw new ErrorResponse('No updatable fields provided', 400, 'NO_UPDATABLE_FIELDS');
   }
-  if ('name' in update && !userValidator.isValidName(update.name)) {
-    throw new ErrorResponse('Name is invalid', 400, 'INVALID_NAME');
-  }
-  if ('roles' in update && !userValidator.isValidRoles(update.roles)) {
-    throw new ErrorResponse('Roles must be an array of non-empty strings.', 400, 'INVALID_ROLES');
-  }
-  if ('email' in update && !userValidator.isValidEmail(update.email)) {
-    throw new ErrorResponse('Email is invalid', 400, 'INVALID_EMAIL');
-  }
+
+  // Validate the update data
+  const validation = UserValidationUtility.validateForUpdate(update, { isAdmin });
+  UserValidationUtility.throwIfInvalid(validation, 'UPDATE_VALIDATION_ERROR');
+
+  // Handle password update separately (requires special logic)
   if ('password' in update) {
-    const passwordValidation = userValidator.isValidPassword(update.password);
-    if (!passwordValidation.valid) {
-      throw new ErrorResponse(passwordValidation.error, 400, 'INVALID_PASSWORD');
-    }
     const user = await User.findById(userId);
     if (!user) throw new ErrorResponse('User not found', 404, 'USER_NOT_FOUND');
+
     if (!user.password && !isAdmin) {
       throw new ErrorResponse('Password update not allowed for social login accounts', 400, 'NO_LOCAL_PASSWORD');
     }
+
     user.password = update.password;
     await user.save();
     delete update.password;
+
     if (Object.keys(update).length === 0) {
       return { message: 'Password updated successfully' };
     }
   }
+
   const updatedUser = await User.findByIdAndUpdate(userId, update, { new: true });
   if (!updatedUser) throw new ErrorResponse('User not found', 404, 'USER_NOT_FOUND');
   return updatedUser;

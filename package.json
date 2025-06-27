@@ -24,8 +24,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "seed": "node seed.js",
-    "clear": "node clear.js",
+    "seed": "node scripts/seed.js",
+    "clear": "node scripts/clear.js",
     "test": "jest --runInBand"
   },
   "dependencies": {

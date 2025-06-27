@@ -2,49 +2,66 @@ import ErrorResponse from '../utils/ErrorResponse.js';
 import logger from '../utils/logger.js';
 import User from '../models/user.model.js';
 import asyncHandler from '../middlewares/asyncHandler.js';
-import userValidator from '../validators/user.validator.js';
-import * as userService from '../services/userService.js';
+import UserValidationUtility from '../validators/user.validation.utility.js';
+import * as userService from '../services/user.service.js';
 
 // @desc    Create a new user
 // @route   POST /users
 // @access  Public
 export const createUser = asyncHandler(async (req, res, next) => {
-  let { email, password, name, roles, social } = req.body;
+  let {
+    email,
+    password,
+    firstName,
+    lastName,
+    displayName,
+    roles,
+    social,
+    addresses,
+    paymentMethods,
+    wishlist,
+    preferences,
+  } = req.body;
 
-  if (!userValidator.isValidEmail(email))
-    return next(new ErrorResponse('Email is required, must be valid, 5-100 chars.', 400, 'INVALID_EMAIL'));
+  // Validate user data for creation
+  const validation = UserValidationUtility.validateForCreate(req.body);
+  if (!validation.valid) {
+    return next(new ErrorResponse(validation.errors.join('; '), 400, 'USER_VALIDATION_ERROR'));
+  }
 
-  // If this is a local registration (no social), require password and name
-  if (!social) {
-    const passwordValidation = userValidator.isValidPassword(password);
-    if (!passwordValidation.valid) return next(new ErrorResponse(passwordValidation.error, 400, 'INVALID_PASSWORD'));
-    if (!userValidator.isValidName(name))
-      return next(new ErrorResponse('Name required, 2-50 chars.', 400, 'INVALID_NAME'));
-  } else {
-    // For social login, provide a default name if not present
-    if (!name || typeof name !== 'string' || name.trim().length < 2) {
-      name = email.split('@')[0]; // fallback: use part of email as name
-    }
-    // Always set isEmailVerified true for social login
+  // Set email verification for social logins
+  if (social) {
     req.body.isEmailVerified = true;
   }
 
-  if (roles && !userValidator.isValidRoles(roles))
-    return next(new ErrorResponse('Roles must be an array of non-empty strings.', 400, 'INVALID_ROLES'));
   // Check for duplicate email
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     return next(new ErrorResponse('Email already exists', 409, 'EMAIL_EXISTS'));
   }
+
   logger.info(`Creating user: email=${email}`);
   try {
-    // For social login, allow missing password and name
-    const user = new User({ email, password, name, roles, social, isEmailVerified: req.body.isEmailVerified });
+    const user = new User({
+      email,
+      password,
+      firstName,
+      lastName,
+      displayName,
+      roles,
+      social,
+      addresses,
+      paymentMethods,
+      wishlist,
+      preferences,
+      isEmailVerified: req.body.isEmailVerified,
+      // Note: tier is not included here - users start with default 'basic' tier
+      // Tier upgrades should be handled through admin actions or payment systems
+    });
     await user.save();
     logger.info('User created successfully:', user._id);
     res.status(201).json(user);
   } catch (err) {
-    // Handle Mongoose validation errors
     if (err.name === 'ValidationError') {
       return next(new ErrorResponse(err.message, 400, 'MONGOOSE_VALIDATION', { errors: err.errors }));
     }
