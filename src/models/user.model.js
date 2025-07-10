@@ -37,7 +37,7 @@ const userSchema = new mongoose.Schema(
     },
     roles: {
       type: [String],
-      enum: ['customer', 'admin', 'vendor', 'moderator', 'support'],
+      enum: ['customer', 'admin'],
       default: ['customer'],
     },
     tier: {
