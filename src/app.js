@@ -6,9 +6,11 @@ import adminRoutes from './routes/admin.routes.js';
 import homeRoutes from './routes/home.routes.js';
 import userRoutes from './routes/user.routes.js';
 import logger from './utils/logger.js';
+import correlationIdMiddleware from './middlewares/correlationId.middleware.js';
 import './utils/tracing.js';
 
 const app = express();
+app.use(correlationIdMiddleware); // Add correlation ID middleware first
 app.use(express.json());
 app.use(cookieParser());
 

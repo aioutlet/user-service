@@ -4,6 +4,7 @@ import User from '../models/user.model.js';
 import asyncHandler from '../middlewares/asyncHandler.js';
 import UserValidationUtility from '../validators/user.validation.utility.js';
 import * as userService from '../services/user.service.js';
+import CorrelationIdHelper from '../utils/correlationId.helper.js';
 
 // @desc    Create a new user
 // @route   POST /users
@@ -40,7 +41,7 @@ export const createUser = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse('Email already exists', 409, 'EMAIL_EXISTS'));
   }
 
-  logger.info(`Creating user: email=${email}`);
+  logger.info(`Creating user: email=${email}`, { correlationId: CorrelationIdHelper.getCorrelationId(req) });
   try {
     const user = new User({
       email,
@@ -59,7 +60,10 @@ export const createUser = asyncHandler(async (req, res, next) => {
       // Tier upgrades should be handled through admin actions or payment systems
     });
     await user.save();
-    logger.info('User created successfully:', user._id);
+    logger.info('User created successfully:', {
+      userId: user._id,
+      correlationId: CorrelationIdHelper.getCorrelationId(req),
+    });
     res.status(201).json(user);
   } catch (err) {
     if (err.name === 'ValidationError') {
