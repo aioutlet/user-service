@@ -41,7 +41,7 @@ export const createUser = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse('Email already exists', 409, 'EMAIL_EXISTS'));
   }
 
-  logger.info(`Creating user: email=${email}`, { correlationId: CorrelationIdHelper.getCorrelationId(req) });
+  const startTime = logger.operationStart('CREATE_USER', req, { email });
   try {
     const user = new User({
       email,
@@ -60,10 +60,18 @@ export const createUser = asyncHandler(async (req, res, next) => {
       // Tier upgrades should be handled through admin actions or payment systems
     });
     await user.save();
-    logger.info('User created successfully:', {
+
+    logger.operationComplete('CREATE_USER', startTime, req, {
       userId: user._id,
-      correlationId: CorrelationIdHelper.getCorrelationId(req),
+      email: user.email,
     });
+
+    logger.business('USER_CREATED', req, {
+      userId: user._id,
+      email: user.email,
+      hasEmailVerified: user.isEmailVerified,
+    });
+
     res.status(201).json(user);
   } catch (err) {
     if (err.name === 'ValidationError') {
