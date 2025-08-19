@@ -1,0 +1,52 @@
+[
+  {
+    "id": "dd0e8400-e29b-41d4-a716-446655440001",
+    "user_id": "550e8400-e29b-41d4-a716-446655440001",
+    "notifications": { "email": true, "sms": true, "push": true },
+    "privacy": { "profile_visible": true, "show_activity": false },
+    "ui": { "theme": "light", "language": "en", "timezone": "America/New_York" },
+    "marketing": { "email_offers": true, "sms_offers": false },
+    "created_at": "2024-01-01T10:00:00Z",
+    "updated_at": "2024-01-01T10:00:00Z"
+  },
+  {
+    "id": "dd0e8400-e29b-41d4-a716-446655440002",
+    "user_id": "550e8400-e29b-41d4-a716-446655440003",
+    "notifications": { "email": true, "sms": true, "push": true },
+    "privacy": { "profile_visible": true, "show_activity": true },
+    "ui": { "theme": "dark", "language": "en", "timezone": "America/Los_Angeles" },
+    "marketing": { "email_offers": true, "sms_offers": true },
+    "created_at": "2024-01-02T11:00:00Z",
+    "updated_at": "2024-01-02T11:00:00Z"
+  },
+  {
+    "id": "dd0e8400-e29b-41d4-a716-446655440003",
+    "user_id": "550e8400-e29b-41d4-a716-446655440005",
+    "notifications": { "email": false, "sms": false, "push": true },
+    "privacy": { "profile_visible": false, "show_activity": false },
+    "ui": { "theme": "light", "language": "en", "timezone": "America/Chicago" },
+    "marketing": { "email_offers": false, "sms_offers": false },
+    "created_at": "2024-01-03T12:00:00Z",
+    "updated_at": "2024-01-03T12:00:00Z"
+  },
+  {
+    "id": "dd0e8400-e29b-41d4-a716-446655440004",
+    "user_id": "550e8400-e29b-41d4-a716-446655440007",
+    "notifications": { "email": true, "sms": false, "push": true },
+    "privacy": { "profile_visible": true, "show_activity": true },
+    "ui": { "theme": "light", "language": "en", "timezone": "America/Chicago" },
+    "marketing": { "email_offers": false, "sms_offers": false },
+    "created_at": "2024-01-04T13:00:00Z",
+    "updated_at": "2024-01-04T13:00:00Z"
+  },
+  {
+    "id": "dd0e8400-e29b-41d4-a716-446655440005",
+    "user_id": "550e8400-e29b-41d4-a716-446655440009",
+    "notifications": { "email": false, "sms": false, "push": false },
+    "privacy": { "profile_visible": false, "show_activity": false },
+    "ui": { "theme": "dark", "language": "en", "timezone": "America/Los_Angeles" },
+    "marketing": { "email_offers": false, "sms_offers": false },
+    "created_at": "2024-01-05T14:00:00Z",
+    "updated_at": "2024-01-05T14:00:00Z"
+  }
+]

@@ -1,0 +1,67 @@
+[
+  {
+    "id": "cc0e8400-e29b-41d4-a716-446655440001",
+    "user_id": "550e8400-e29b-41d4-a716-446655440001",
+    "product_id": "507f1f77bcf86cd799439011",
+    "product_name": "Wireless Bluetooth Headphones",
+    "product_price": 79.99,
+    "product_image_url": "https://example.com/images/headphones.jpg",
+    "notes": "Want these for my daily commute",
+    "priority": 2,
+    "is_private": false,
+    "created_at": "2024-01-01T10:30:00Z",
+    "updated_at": "2024-01-01T10:30:00Z"
+  },
+  {
+    "id": "cc0e8400-e29b-41d4-a716-446655440002",
+    "user_id": "550e8400-e29b-41d4-a716-446655440001",
+    "product_id": "507f1f77bcf86cd799439012",
+    "product_name": "Gaming Laptop",
+    "product_price": 1299.99,
+    "product_image_url": "https://example.com/images/laptop.jpg",
+    "notes": "Need for work and gaming",
+    "priority": 3,
+    "is_private": false,
+    "created_at": "2024-01-01T10:30:00Z",
+    "updated_at": "2024-01-01T10:30:00Z"
+  },
+  {
+    "id": "cc0e8400-e29b-41d4-a716-446655440003",
+    "user_id": "550e8400-e29b-41d4-a716-446655440003",
+    "product_id": "507f1f77bcf86cd799439013",
+    "product_name": "Designer Handbag",
+    "product_price": 299.99,
+    "product_image_url": "https://example.com/images/handbag.jpg",
+    "notes": "Perfect for special occasions",
+    "priority": 2,
+    "is_private": true,
+    "created_at": "2024-01-02T11:30:00Z",
+    "updated_at": "2024-01-02T11:30:00Z"
+  },
+  {
+    "id": "cc0e8400-e29b-41d4-a716-446655440004",
+    "user_id": "550e8400-e29b-41d4-a716-446655440007",
+    "product_id": "507f1f77bcf86cd799439014",
+    "product_name": "Business Analytics Software",
+    "product_price": 499.99,
+    "product_image_url": "https://example.com/images/analytics.jpg",
+    "notes": "For inventory management",
+    "priority": 3,
+    "is_private": false,
+    "created_at": "2024-01-04T13:30:00Z",
+    "updated_at": "2024-01-04T13:30:00Z"
+  },
+  {
+    "id": "cc0e8400-e29b-41d4-a716-446655440005",
+    "user_id": "550e8400-e29b-41d4-a716-446655440009",
+    "product_id": "507f1f77bcf86cd799439015",
+    "product_name": "Ergonomic Office Chair",
+    "product_price": 249.99,
+    "product_image_url": "https://example.com/images/chair.jpg",
+    "notes": "For better work setup",
+    "priority": 2,
+    "is_private": false,
+    "created_at": "2024-01-05T14:30:00Z",
+    "updated_at": "2024-01-05T14:30:00Z"
+  }
+]
