@@ -1,43 +1,59 @@
 version: '3.8'
-services:
-  mongo-user-service:
-    image: mongo:6.0
-    container_name: mongo-user-service
-    restart: unless-stopped
-    ports:
-      - '27017:27017'
-    environment:
-      MONGO_INITDB_DATABASE: user-service-db
-    volumes:
-      - mongo-user-service-data:/data/db
 
+services:
   user-service:
     build: .
-    container_name: user-service
+    container_name: user-service-docker
     restart: unless-stopped
     ports:
-      - '5000:5000'
+      - '3002:3002'
     environment:
-      - PORT=5000
-      - MONGODB_CONNECTION_SCHEME=mongodb
-      - MONGODB_HOST=mongo-user-service
-      - MONGODB_PORT=27017
-      - MONGODB_USERNAME=
-      - MONGODB_PASSWORD=
-      - MONGODB_DB_NAME=user-service-db
-      - MONGODB_DB_PARAMS=
-      - LOG_LEVEL=info
-      - LOG_TO_CONSOLE=true
-      - LOG_TO_FILE=false
-      - LOG_FILE_PATH=user-service.log
-      - OTEL_SERVICE_NAME=user-service
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+      - NODE_ENV=development
+      - PORT=3002
+      - HOST=0.0.0.0
+      - MONGODB_URI=mongodb://mongo-user-service:27017/user_service_dev
+      - JWT_SECRET=user_service_jwt_dev_secret_123
+      - JWT_EXPIRES_IN=7d
+      - BCRYPT_ROUNDS=10
+      - LOG_LEVEL=debug
+      - CORS_ORIGIN=http://localhost:3000,http://localhost:3010
+      - AUTH_SERVICE_URL=http://host.docker.internal:4000
     depends_on:
-      - mongo-user-service
+      mongo-user-service:
+        condition: service_healthy
+    networks:
+      - user-network
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3002/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  mongo-user-service:
+    image: mongo:6.0
+    container_name: user-mongo-docker
+    restart: unless-stopped
+    ports:
+      - '27019:27017'
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=userservice
+      - MONGO_INITDB_ROOT_PASSWORD=user_mongo_dev_123
+      - MONGO_INITDB_DATABASE=user_service_dev
     volumes:
-      - .:/app
-    working_dir: /app
-    command: ['npm', 'run', 'start']
+      - mongo-user-service-data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    networks:
+      - user-network
 
 volumes:
   mongo-user-service-data:
+
+networks:
+  user-network:
+    driver: bridge
