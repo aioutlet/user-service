@@ -18,7 +18,7 @@ const preferencesSchema = new mongoose.Schema(
       },
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 export default preferencesSchema;

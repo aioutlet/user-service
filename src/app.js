@@ -27,7 +27,7 @@ app.use(
   cors({
     origin: config.security.corsOrigin,
     credentials: true,
-  })
+  }),
 );
 
 app.use(correlationIdMiddleware); // Add correlation ID middleware first

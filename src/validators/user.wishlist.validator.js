@@ -16,7 +16,7 @@ const userWishlistValidator = {
 
   isValidProductImage(productImage) {
     // Optional field, but if provided must be valid
-    if (!productImage) return true;
+    if (!productImage) {return true;}
     return (
       typeof productImage === 'string' &&
       productImage.trim().length > 0 &&
@@ -27,7 +27,7 @@ const userWishlistValidator = {
 
   isValidProductCategory(productCategory) {
     // Optional field, but if provided must be valid
-    if (!productCategory) return true;
+    if (!productCategory) {return true;}
     return (
       typeof productCategory === 'string' &&
       productCategory.trim().length > 0 &&
@@ -38,7 +38,7 @@ const userWishlistValidator = {
 
   isValidProductBrand(productBrand) {
     // Optional field, but if provided must be valid
-    if (!productBrand) return true;
+    if (!productBrand) {return true;}
     return (
       typeof productBrand === 'string' &&
       productBrand.trim().length > 0 &&
@@ -49,7 +49,7 @@ const userWishlistValidator = {
 
   isValidNotes(notes) {
     // Optional field, but if provided must be valid
-    if (!notes) return true;
+    if (!notes) {return true;}
     return typeof notes === 'string' && notes.trim().length <= 500;
   },
 
@@ -74,13 +74,13 @@ const userWishlistValidator = {
 
     if (!this.isValidProductCategory(wishlistItem.productCategory)) {
       errors.push(
-        'Product category must contain only letters, numbers, spaces, hyphens, and ampersands (max 100 characters)'
+        'Product category must contain only letters, numbers, spaces, hyphens, and ampersands (max 100 characters)',
       );
     }
 
     if (!this.isValidProductBrand(wishlistItem.productBrand)) {
       errors.push(
-        'Product brand must contain only letters, numbers, spaces, hyphens, ampersands, and periods (max 100 characters)'
+        'Product brand must contain only letters, numbers, spaces, hyphens, ampersands, and periods (max 100 characters)',
       );
     }
 

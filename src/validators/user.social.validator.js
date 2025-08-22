@@ -2,13 +2,13 @@
 const userSocialValidator = {
   isValidSocialId(id) {
     // Social IDs can be strings or numbers, but must be non-empty when provided
-    if (!id) return true; // Optional field
+    if (!id) {return true;} // Optional field
     return typeof id === 'string' && id.trim().length > 0 && id.trim().length <= 100;
   },
 
   isValidSocialEmail(email) {
     // Optional field, but if provided must be valid email
-    if (!email) return true;
+    if (!email) {return true;}
     return (
       typeof email === 'string' &&
       email.trim().length >= 5 &&
@@ -19,7 +19,7 @@ const userSocialValidator = {
 
   isValidSocialUsername(username) {
     // Optional field, but if provided must be valid username
-    if (!username) return true;
+    if (!username) {return true;}
     return (
       typeof username === 'string' &&
       username.trim().length > 0 &&
@@ -29,7 +29,7 @@ const userSocialValidator = {
   },
 
   validateGoogleAccount(google) {
-    if (!google) return { valid: true, errors: [] };
+    if (!google) {return { valid: true, errors: [] };}
 
     const errors = [];
 
@@ -48,7 +48,7 @@ const userSocialValidator = {
   },
 
   validateFacebookAccount(facebook) {
-    if (!facebook) return { valid: true, errors: [] };
+    if (!facebook) {return { valid: true, errors: [] };}
 
     const errors = [];
 
@@ -67,7 +67,7 @@ const userSocialValidator = {
   },
 
   validateTwitterAccount(twitter) {
-    if (!twitter) return { valid: true, errors: [] };
+    if (!twitter) {return { valid: true, errors: [] };}
 
     const errors = [];
 
@@ -86,7 +86,7 @@ const userSocialValidator = {
   },
 
   validateLinkedInAccount(linkedin) {
-    if (!linkedin) return { valid: true, errors: [] };
+    if (!linkedin) {return { valid: true, errors: [] };}
 
     const errors = [];
 
@@ -105,7 +105,7 @@ const userSocialValidator = {
   },
 
   validateAppleAccount(apple) {
-    if (!apple) return { valid: true, errors: [] };
+    if (!apple) {return { valid: true, errors: [] };}
 
     const errors = [];
 
@@ -124,7 +124,7 @@ const userSocialValidator = {
   },
 
   validateSocialAccounts(social) {
-    if (!social) return { valid: true, errors: [] };
+    if (!social) {return { valid: true, errors: [] };}
 
     const allErrors = [];
 

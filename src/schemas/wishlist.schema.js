@@ -42,7 +42,7 @@ const wishlistSchema = new mongoose.Schema(
   {
     _id: true,
     timestamps: true,
-  }
+  },
 );
 
 export default wishlistSchema;

@@ -17,7 +17,8 @@ class UserValidationUtility {
    * @param {boolean} options.isCreate - Whether this is a creation operation (requires certain fields)
    * @param {boolean} options.isAdmin - Whether this is an admin operation (allows additional fields)
    * @param {boolean} options.requirePassword - Whether password validation is required
-   * @returns {Object} - { valid: boolean, errors: Array<string>, detailedErrors: Array<{message: string, code: string}> }
+   * @returns {Object} - { valid: boolean, errors: Array<string>,
+   *                       detailedErrors: Array<{message: string, code: string}> }
    */
   static validateUserData(userData, options = {}) {
     const { isCreate = false, isAdmin = false, requirePassword = false } = options;

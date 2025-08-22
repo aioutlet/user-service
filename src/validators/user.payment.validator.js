@@ -44,7 +44,7 @@ const userPaymentValidator = {
 
   isValidNickname(nickname) {
     // Optional field, but if provided must be valid
-    if (!nickname) return true;
+    if (!nickname) {return true;}
     return typeof nickname === 'string' && nickname.trim().length > 0 && nickname.trim().length <= 50;
   },
 
@@ -99,7 +99,7 @@ const userPaymentValidator = {
 
     if (!this.isValidPaymentType(payment.type)) {
       errors.push(
-        'Payment type must be one of: credit_card, debit_card, paypal, apple_pay, google_pay, bank_transfer, other'
+        'Payment type must be one of: credit_card, debit_card, paypal, apple_pay, google_pay, bank_transfer, other',
       );
     }
 
@@ -139,7 +139,7 @@ const userPaymentValidator = {
 
     if (!this.isValidCardholderName(payment.cardholderName)) {
       errors.push(
-        'Cardholder name is required and must contain only letters, spaces, hyphens, apostrophes, and periods'
+        'Cardholder name is required and must contain only letters, spaces, hyphens, apostrophes, and periods',
       );
     }
 

@@ -31,7 +31,7 @@ const userValidator = {
   },
   isValidFirstName(firstName) {
     // Optional field, but if provided must be valid
-    if (!firstName) return true;
+    if (!firstName) {return true;}
     return (
       typeof firstName === 'string' &&
       firstName.trim().length >= 2 && // Minimum 2 characters
@@ -41,7 +41,7 @@ const userValidator = {
   },
   isValidLastName(lastName) {
     // Optional field, but if provided must be valid
-    if (!lastName) return true;
+    if (!lastName) {return true;}
     return (
       typeof lastName === 'string' &&
       lastName.trim().length > 0 &&
@@ -51,7 +51,7 @@ const userValidator = {
   },
   isValidDisplayName(displayName) {
     // Optional field, but if provided must be valid
-    if (!displayName) return true;
+    if (!displayName) {return true;}
     return typeof displayName === 'string' && displayName.trim().length > 0 && displayName.trim().length <= 100;
   },
   isValidRoles(roles) {
@@ -61,7 +61,7 @@ const userValidator = {
       Array.isArray(roles) &&
       roles.length > 0 &&
       roles.every(
-        (role) => typeof role === 'string' && role.trim().length > 0 && validRoles.includes(role.trim().toLowerCase())
+        (role) => typeof role === 'string' && role.trim().length > 0 && validRoles.includes(role.trim().toLowerCase()),
       )
     );
   },

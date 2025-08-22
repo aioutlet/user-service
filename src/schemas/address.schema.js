@@ -53,7 +53,7 @@ const addressSchema = new mongoose.Schema(
       default: false,
     },
   },
-  { _id: true }
+  { _id: true },
 );
 
 export default addressSchema;

@@ -11,7 +11,7 @@ const userAddressValidator = {
 
   isValidAddressLine2(addressLine2) {
     // Optional field, but if provided must be valid
-    if (!addressLine2) return true;
+    if (!addressLine2) {return true;}
     return typeof addressLine2 === 'string' && addressLine2.trim().length <= 200;
   },
 
@@ -53,7 +53,7 @@ const userAddressValidator = {
 
   isValidPhone(phone) {
     // Optional field, but if provided must be valid
-    if (!phone) return true;
+    if (!phone) {return true;}
     return typeof phone === 'string' && phone.trim().length <= 20 && /^[\+]?[0-9\s\-\(\)\.]+$/.test(phone.trim());
   },
 

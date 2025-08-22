@@ -77,7 +77,7 @@ const paymentSchema = new mongoose.Schema(
   {
     _id: true,
     timestamps: true,
-  }
+  },
 );
 
 export default paymentSchema;

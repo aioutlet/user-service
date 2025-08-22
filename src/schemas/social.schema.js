@@ -53,7 +53,7 @@ const socialSchema = new mongoose.Schema(
       },
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 export default socialSchema;

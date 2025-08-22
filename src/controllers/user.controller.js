@@ -4,13 +4,12 @@ import User from '../models/user.model.js';
 import asyncHandler from '../middlewares/asyncHandler.js';
 import UserValidationUtility from '../validators/user.validation.utility.js';
 import * as userService from '../services/user.service.js';
-import CorrelationIdHelper from '../utils/correlationId.helper.js';
 
 // @desc    Create a new user
 // @route   POST /users
 // @access  Public
 export const createUser = asyncHandler(async (req, res, next) => {
-  let {
+  const {
     email,
     password,
     firstName,

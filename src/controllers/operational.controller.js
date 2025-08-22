@@ -27,7 +27,7 @@ export function readiness(req, res) {
         // Add other dependency checks
       },
     });
-  } catch (error) {
+  } catch {
     res.status(503).json({
       status: 'not ready',
       service: 'user-service',

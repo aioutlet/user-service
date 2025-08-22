@@ -7,7 +7,7 @@ import * as userService from '../services/user.service.js';
  * @route   GET /admin/users
  * @access  Admin only
  */
-export const getUsers = asyncHandler(async (req, res, next) => {
+export const getUsers = asyncHandler(async (req, res, _next) => {
   const users = await User.find({}, '-password'); // Exclude password field
   res.json(users);
 });
