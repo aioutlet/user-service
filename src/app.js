@@ -1,7 +1,9 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
+import cors from 'cors';
 
-import connectDB from './config/db.js';
+import { config, validateConfig } from './config/index.js';
+import connectDB from './database/connection.js';
 import adminRoutes from './routes/admin.routes.js';
 import homeRoutes from './routes/home.routes.js';
 import userRoutes from './routes/user.routes.js';
@@ -11,12 +13,31 @@ import { health, readiness, liveness, metrics } from './controllers/operational.
 import './utils/tracing.js';
 
 const app = express();
+
+// Validate configuration before starting the app
+try {
+  validateConfig();
+} catch (error) {
+  console.error('❌ Configuration Error:', error.message);
+  process.exit(1);
+}
+
+// Apply CORS before other middlewares
+app.use(
+  cors({
+    origin: config.security.corsOrigin,
+    credentials: true,
+  })
+);
+
 app.use(correlationIdMiddleware); // Add correlation ID middleware first
 app.use(express.json());
 app.use(cookieParser());
 
+// Connect to database
 await connectDB();
 
+// Routes
 app.use('/api/home', homeRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin/users', adminRoutes);
@@ -28,7 +49,7 @@ app.get('/health/live', liveness); // Liveness probe
 app.get('/metrics', metrics); // Basic metrics
 
 // Centralized error handler for consistent error responses
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   const status = err.status || 500;
   res.status(status).json({
     error: {
@@ -40,5 +61,18 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => logger.info(`User service running on port ${PORT}`));
+app.listen(config.server.port, config.server.host, () => {
+  logger.info(`User service running on ${config.server.host}:${config.server.port}`);
+  logger.info(`Environment: ${config.env}`);
+  logger.info(`Database: ${config.database.uri.replace(/\/\/[^@]*@/, '//***:***@')}`); // Hide credentials
+});
+
+// Graceful shutdown
+const gracefulShutdown = (signal) => {
+  logger.info(`Received ${signal}. Starting graceful shutdown...`);
+
+  process.exit(0);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

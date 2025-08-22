@@ -1,157 +1,253 @@
 #!/bin/bash
 
-# User Service - Environment Teardown Script
-# This script tears down the user-service for any environment
+# =============================================================================
+# User Service Teardown Script
+# =============================================================================
+# This script stops and cleans up the user service and related resources
 
-set -e  # Exit on any error
+set -e
 
-# Environment is mandatory
-TARGET_ENV=""
+SERVICE_NAME="user-service"
+SERVICE_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ENVIRONMENT="development"
 
-# Teardown options
-REMOVE_VOLUMES=false
-REMOVE_NETWORKS=false
-FORCE_REMOVE=false
-REMOVE_IMAGES=false
-
-# Colors for output
+# Color codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+PURPLE='\033[0;35m'
+NC='\033[0m'
 
-# Configuration
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SERVICE_DIR="$(dirname "$SCRIPT_DIR")"
-SERVICE_NAME="user-service"
-
-# Function to print colored output
-print_status() {
-    local color=$1
-    local message=$2
-    echo -e "${color}${message}${NC}"
+log_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
 }
 
-# Function to show help
-show_help() {
-    echo -e "${YELLOW}Usage: $0 -e ENV_NAME [OPTIONS]${NC}"
-    echo ""
-    echo -e "${YELLOW}Required:${NC}"
-    echo "  -e, --env ENV_NAME    Target environment (development, production, staging, testing)"
-    echo ""
-    echo -e "${YELLOW}Options:${NC}"
-    echo "  -v, --volumes         Remove volumes (⚠️  DATA LOSS!)"
-    echo "  -n, --networks        Remove networks"
-    echo "  -i, --images          Remove Docker images"
-    echo "  -f, --force           Force removal without confirmation"
-    echo "  -h, --help           Show this help message"
-    echo ""
+log_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
 }
 
-# Parse command line arguments
+log_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+log_header() {
+    echo -e "${PURPLE}$1${NC}"
+}
+
+# Show usage
+show_usage() {
+    echo "Usage: $0 [options]"
+    echo ""
+    echo "Options:"
+    echo "  --env=ENVIRONMENT    Environment (development, staging, production)"
+    echo "  --remove-volumes     Remove persistent volumes (WARNING: Data loss!)"
+    echo "  --remove-images      Remove Docker images"
+    echo "  --force              Force removal without confirmation"
+    echo "  -h, --help          Show this help message"
+    echo ""
+    echo "Examples:"
+    echo "  $0                   # Stop development services"
+    echo "  $0 --env=staging     # Stop staging services"
+    echo "  $0 --remove-volumes  # Stop and remove data volumes"
+}
+
+# Parse arguments
+REMOVE_VOLUMES=false
+REMOVE_IMAGES=false
+FORCE=false
+
 while [[ $# -gt 0 ]]; do
     case $1 in
-        -e|--env)
-            TARGET_ENV="$2"
-            shift 2
+        --env=*)
+            ENVIRONMENT="${1#*=}"
+            shift
             ;;
-        -v|--volumes)
+        --remove-volumes)
             REMOVE_VOLUMES=true
             shift
             ;;
-        -n|--networks)
-            REMOVE_NETWORKS=true
-            shift
-            ;;
-        -i|--images)
+        --remove-images)
             REMOVE_IMAGES=true
             shift
             ;;
-        -f|--force)
-            FORCE_REMOVE=true
+        --force)
+            FORCE=true
             shift
             ;;
         -h|--help)
-            show_help
+            show_usage
             exit 0
             ;;
         *)
-            echo -e "${RED}❌ Error: Unknown option: $1${NC}"
-            show_help
+            log_error "Unknown option: $1"
+            show_usage
             exit 1
             ;;
     esac
 done
 
-# Validate required parameters
-if [ -z "$TARGET_ENV" ]; then
-    echo -e "${RED}❌ Error: Environment parameter is required${NC}"
-    show_help
-    exit 1
-fi
-
-# Validate environment value
-case $TARGET_ENV in
-    development|staging|production|testing)
-        ;;
-    *)
-        echo -e "${RED}❌ Error: Invalid environment: $TARGET_ENV${NC}"
-        echo -e "${YELLOW}Valid environments: development, staging, production, testing${NC}"
-        exit 1
-        ;;
-esac
-
-print_status $BLUE "🧹 Starting $SERVICE_NAME teardown for $TARGET_ENV environment..."
-
-# Check if docker-compose file exists
-COMPOSE_FILE="$SERVICE_DIR/docker-compose.yml"
-if [ -f "$COMPOSE_FILE" ]; then
-    print_status $BLUE "📦 Found docker-compose.yml, stopping services..."
-    
-    cd "$SERVICE_DIR"
-    
-    # Set environment-specific project name
-    export COMPOSE_PROJECT_NAME="${SERVICE_NAME}-${TARGET_ENV}"
-    
-    # Stop and remove containers
-    if docker-compose down; then
-        print_status $GREEN "✅ Containers stopped and removed"
+# Get compose command
+get_compose_command() {
+    if command -v docker-compose >/dev/null 2>&1; then
+        echo "docker-compose"
     else
-        print_status $YELLOW "⚠️  Some issues stopping containers (they may not be running)"
+        echo "docker compose"
     fi
-    
-    # Remove volumes if requested
-    if [ "$REMOVE_VOLUMES" = true ]; then
-        print_status $BLUE "🗂️  Removing volumes..."
-        docker-compose down -v || print_status $YELLOW "⚠️  Some issues removing volumes"
-    fi
-    
-    # Remove networks if requested
-    if [ "$REMOVE_NETWORKS" = true ]; then
-        print_status $BLUE "🌐 Removing networks..."
-        # Remove custom networks (default networks are handled by docker-compose down)
-        docker network ls --filter name="${COMPOSE_PROJECT_NAME}" -q | xargs -r docker network rm || true
-    fi
-    
-    # Remove images if requested
-    if [ "$REMOVE_IMAGES" = true ]; then
-        print_status $BLUE "📦 Removing images..."
-        docker-compose down --rmi all || print_status $YELLOW "⚠️  Some issues removing images"
-    fi
-else
-    print_status $YELLOW "⚠️  No docker-compose.yml found, attempting manual cleanup..."
-    
-    # Try to remove containers with service name pattern
-    CONTAINERS=$(docker ps -aq --filter "name=${SERVICE_NAME}-${TARGET_ENV}" 2>/dev/null || true)
-    if [ -n "$CONTAINERS" ]; then
-        print_status $BLUE "Stopping containers..."
-        docker stop $CONTAINERS >/dev/null 2>&1 || true
-        docker rm $CONTAINERS >/dev/null 2>&1 || true
-        print_status $GREEN "✅ Manual container cleanup completed"
-    else
-        print_status $BLUE "No containers found matching ${SERVICE_NAME}-${TARGET_ENV}"
-    fi
-fi
+}
 
-print_status $GREEN "🧹 $SERVICE_NAME teardown completed for $TARGET_ENV environment"
+# Get compose files for environment
+get_compose_files() {
+    local files="-f docker-compose.yml"
+    
+    case $ENVIRONMENT in
+        development)
+            # override file is loaded automatically
+            ;;
+        staging)
+            files="$files -f docker-compose.staging.yml"
+            ;;
+        production)
+            files="$files -f docker-compose.production.yml"
+            ;;
+    esac
+    
+    echo "$files"
+}
+
+# Confirm destructive actions
+confirm_action() {
+    local message="$1"
+    
+    if [[ "$FORCE" == "true" ]]; then
+        return 0
+    fi
+    
+    echo -e "${YELLOW}$message${NC}"
+    read -p "Are you sure? (y/N): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Stop services
+stop_services() {
+    log_info "Stopping $SERVICE_NAME services for $ENVIRONMENT environment..."
+    
+    cd "$SERVICE_PATH"
+    
+    local compose_cmd=$(get_compose_command)
+    local compose_files=$(get_compose_files)
+    
+    # Show current status
+    log_info "Current service status:"
+    $compose_cmd $compose_files ps 2>/dev/null || log_info "No services currently running"
+    
+    # Stop services
+    export NODE_ENV=$ENVIRONMENT
+    $compose_cmd $compose_files down
+    
+    log_success "Services stopped"
+}
+
+# Remove volumes
+remove_volumes() {
+    if [[ "$REMOVE_VOLUMES" != "true" ]]; then
+        return
+    fi
+    
+    if confirm_action "⚠️  WARNING: This will delete ALL persistent data including database content!"; then
+        log_info "Removing volumes..."
+        
+        cd "$SERVICE_PATH"
+        local compose_cmd=$(get_compose_command)
+        local compose_files=$(get_compose_files)
+        
+        export NODE_ENV=$ENVIRONMENT
+        $compose_cmd $compose_files down -v
+        
+        log_success "Volumes removed"
+    else
+        log_info "Volume removal cancelled"
+    fi
+}
+
+# Remove images
+remove_images() {
+    if [[ "$REMOVE_IMAGES" != "true" ]]; then
+        return
+    fi
+    
+    if confirm_action "Remove Docker images for $SERVICE_NAME?"; then
+        log_info "Removing Docker images..."
+        
+        # Remove service images
+        docker images --format "table {{.Repository}}:{{.Tag}}" | grep "$SERVICE_NAME" | while read -r image; do
+            if [[ -n "$image" ]] && [[ "$image" != "REPOSITORY:TAG" ]]; then
+                docker rmi "$image" 2>/dev/null || log_warning "Could not remove image: $image"
+            fi
+        done
+        
+        # Clean up dangling images
+        docker image prune -f >/dev/null 2>&1 || true
+        
+        log_success "Docker images cleaned up"
+    else
+        log_info "Image removal cancelled"
+    fi
+}
+
+# Show cleanup summary
+show_summary() {
+    echo
+    log_header "🧹 Teardown Summary"
+    echo "=========================="
+    log_success "Environment: $ENVIRONMENT"
+    log_success "Services: Stopped"
+    
+    if [[ "$REMOVE_VOLUMES" == "true" ]]; then
+        log_warning "Volumes: Removed (Data deleted)"
+    else
+        log_info "Volumes: Preserved"
+    fi
+    
+    if [[ "$REMOVE_IMAGES" == "true" ]]; then
+        log_info "Images: Removed"
+    else
+        log_info "Images: Preserved"
+    fi
+    
+    echo
+    log_info "💡 To restart the service:"
+    log_info "   ./.ops/setup.sh --env=$ENVIRONMENT"
+    echo
+}
+
+# Main execution
+main() {
+    log_header "============================================"
+    log_header "🧹 User Service Teardown"
+    log_header "============================================"
+    
+    log_info "Environment: $ENVIRONMENT"
+    log_info "Remove volumes: $REMOVE_VOLUMES"
+    log_info "Remove images: $REMOVE_IMAGES"
+    echo
+    
+    stop_services
+    remove_volumes
+    remove_images
+    show_summary
+    
+    log_success "✅ Teardown completed successfully!"
+}
+
+# Execute main function
+main "$@"

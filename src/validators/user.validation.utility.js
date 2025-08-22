@@ -17,33 +17,39 @@ class UserValidationUtility {
    * @param {boolean} options.isCreate - Whether this is a creation operation (requires certain fields)
    * @param {boolean} options.isAdmin - Whether this is an admin operation (allows additional fields)
    * @param {boolean} options.requirePassword - Whether password validation is required
-   * @returns {Object} - { valid: boolean, errors: Array<string> }
+   * @returns {Object} - { valid: boolean, errors: Array<string>, detailedErrors: Array<{message: string, code: string}> }
    */
   static validateUserData(userData, options = {}) {
     const { isCreate = false, isAdmin = false, requirePassword = false } = options;
     const errors = [];
+    const detailedErrors = [];
 
     // Email validation (required for create operations)
     if (isCreate && !userData.email) {
       errors.push('Email is required');
+      detailedErrors.push({ message: 'Email is required', code: 'EMAIL_REQUIRED' });
     } else if (userData.email && !userValidator.isValidEmail(userData.email)) {
       errors.push('Email is required, must be valid, 5-100 chars.');
+      detailedErrors.push({ message: 'Email is required, must be valid, 5-100 chars.', code: 'INVALID_EMAIL' });
     }
 
     // Password validation
     if (requirePassword || (isCreate && !userData.social)) {
       if (!userData.password) {
         errors.push('Password is required');
+        detailedErrors.push({ message: 'Password is required', code: 'PASSWORD_REQUIRED' });
       } else {
         const passwordValidation = userValidator.isValidPassword(userData.password);
         if (!passwordValidation.valid) {
           errors.push(passwordValidation.error);
+          detailedErrors.push({ message: passwordValidation.error, code: 'INVALID_PASSWORD' });
         }
       }
     } else if (userData.password) {
       const passwordValidation = userValidator.isValidPassword(userData.password);
       if (!passwordValidation.valid) {
         errors.push(passwordValidation.error);
+        detailedErrors.push({ message: passwordValidation.error, code: 'INVALID_PASSWORD' });
       }
     }
 
@@ -51,18 +57,27 @@ class UserValidationUtility {
     if (userData.firstName !== undefined) {
       if (!userValidator.isValidFirstName(userData.firstName)) {
         errors.push('First name must contain only letters, spaces, hyphens, apostrophes, and periods (max 50 chars).');
+        detailedErrors.push({
+          message: 'First name must contain only letters, spaces, hyphens, apostrophes, and periods (max 50 chars).',
+          code: 'INVALID_NAME',
+        });
       }
     }
 
     if (userData.lastName !== undefined) {
       if (!userValidator.isValidLastName(userData.lastName)) {
         errors.push('Last name must contain only letters, spaces, hyphens, apostrophes, and periods (max 50 chars).');
+        detailedErrors.push({
+          message: 'Last name must contain only letters, spaces, hyphens, apostrophes, and periods (max 50 chars).',
+          code: 'INVALID_NAME',
+        });
       }
     }
 
     if (userData.displayName !== undefined) {
       if (!userValidator.isValidDisplayName(userData.displayName)) {
         errors.push('Display name must be less than 100 characters.');
+        detailedErrors.push({ message: 'Display name must be less than 100 characters.', code: 'INVALID_NAME' });
       }
     }
 
@@ -70,6 +85,7 @@ class UserValidationUtility {
     if (userData.roles !== undefined) {
       if (!userValidator.isValidRoles(userData.roles)) {
         errors.push('Roles must be an array of valid role strings.');
+        detailedErrors.push({ message: 'Roles must be an array of valid role strings.', code: 'INVALID_ROLES' });
       }
     }
 
@@ -121,6 +137,7 @@ class UserValidationUtility {
     return {
       valid: errors.length === 0,
       errors,
+      detailedErrors,
     };
   }
 

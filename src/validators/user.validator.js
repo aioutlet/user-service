@@ -34,7 +34,7 @@ const userValidator = {
     if (!firstName) return true;
     return (
       typeof firstName === 'string' &&
-      firstName.trim().length > 0 &&
+      firstName.trim().length >= 2 && // Minimum 2 characters
       firstName.trim().length <= 50 &&
       /^[a-zA-Z\s\-'\.]+$/.test(firstName.trim())
     );

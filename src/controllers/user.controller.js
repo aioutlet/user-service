@@ -27,7 +27,9 @@ export const createUser = asyncHandler(async (req, res, next) => {
   // Validate user data for creation
   const validation = UserValidationUtility.validateForCreate(req.body);
   if (!validation.valid) {
-    return next(new ErrorResponse(validation.errors.join('; '), 400, 'USER_VALIDATION_ERROR'));
+    // Return the first error with specific code
+    const firstError = validation.detailedErrors[0];
+    return next(new ErrorResponse(firstError.message, 400, firstError.code));
   }
 
   // Set email verification for social logins
@@ -139,6 +141,94 @@ export const findBySocial = asyncHandler(async (req, res, next) => {
   try {
     const user = await userService.getUserBySocial(req.query.provider, req.query.id);
     res.json(user);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Test compatibility functions - aliases to existing functions
+export const getUserById = getUser;
+
+// @desc    Deactivate account (set isActive to false)
+// @route   PATCH /users/deactivate
+// @access  Private
+export const deactivateAccount = asyncHandler(async (req, res, next) => {
+  try {
+    const updatedUser = await User.findByIdAndUpdate(req.user._id, { isActive: false }, { new: true });
+    if (!updatedUser) {
+      return next(new ErrorResponse('User not found', 404, 'USER_NOT_FOUND'));
+    }
+    res.status(200).json({ message: 'Account deactivated', user: updatedUser });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// @desc    Update password
+// @route   PATCH /users/password
+// @access  Private
+export const updatePassword = asyncHandler(async (req, res, next) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    return next(new ErrorResponse('Current password and new password are required', 400, 'PASSWORDS_REQUIRED'));
+  }
+
+  try {
+    // Get user with password
+    const user = await User.findById(req.user._id).select('+password');
+    if (!user) {
+      return next(new ErrorResponse('User not found', 404, 'USER_NOT_FOUND'));
+    }
+
+    // Check current password
+    const isMatch = await user.matchPassword(currentPassword);
+    if (!isMatch) {
+      return next(new ErrorResponse('Current password is incorrect', 400, 'INVALID_CURRENT_PASSWORD'));
+    }
+
+    // Update password
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json({ message: 'Password updated successfully' });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// @desc    Update user by ID (admin function)
+// @route   PATCH /admin/users/:id
+// @access  Private/Admin
+export const updateUserById = asyncHandler(async (req, res, next) => {
+  try {
+    const result = await userService.updateUser(req.params.id, req.body, { isAdmin: true });
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// @desc    Update user password by ID (admin function)
+// @route   PATCH /admin/users/:id/password
+// @access  Private/Admin
+export const updateUserPasswordById = asyncHandler(async (req, res, next) => {
+  const { newPassword } = req.body;
+
+  if (!newPassword) {
+    return next(new ErrorResponse('New password is required', 400, 'PASSWORD_REQUIRED'));
+  }
+
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return next(new ErrorResponse('User not found', 404, 'USER_NOT_FOUND'));
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json({ message: 'User password updated successfully' });
   } catch (err) {
     next(err);
   }

@@ -1,0 +1,30 @@
+# docker-compose.override.yml
+# This file is automatically loaded in development
+# Contains development-specific overrides
+
+services:
+  user-service:
+    build:
+      target: development
+    ports:
+      - '${PORT:-3002}:${PORT:-3002}'
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./logs:/app/logs
+    command: npm run dev
+    environment:
+      - NODE_ENV=development
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.user-service.rule=PathPrefix(`/api/users`)'
+      - 'traefik.http.routers.user-service.entrypoints=web'
+
+  mongo-user-service:
+    ports:
+      - '${MONGODB_PORT:-27017}:27017'
+    volumes:
+      - ./database/dev-data:/docker-entrypoint-initdb.d:ro
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGODB_USERNAME:-userservice}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASSWORD:-user_mongo_dev_123}

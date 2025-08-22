@@ -1,51 +1,22 @@
 #!/bin/bash
 
-# User Service Environment Setup
-# This script sets up the user service for any environment by reading from .env files
+# =============================================================================
+# User Service Environment Setup Script
+# =============================================================================
+# This script sets up the user service for any environment by reading from 
+# environment-specific .env files and configuring Docker Compose accordingly.
 
 set -e
 
 SERVICE_NAME="user-service"
 SERVICE_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-# Default environment
-ENV_NAME="development"
-
-# Parse command line arguments
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        -e|--env)
-            ENV_NAME="$2"
-            shift 2
-            ;;
-        -h|--help)
-            echo "Usage: $0 [options]"
-            echo "Options:"
-            echo "  -e, --env ENV_NAME    Environment name (default: development)"
-            echo "                        Looks for .env.ENV_NAME file"
-            echo "  -h, --help           Show this help message"
-            echo ""
-            echo "Examples:"
-            echo "  $0                   # Uses .env (development)"
-            echo "  $0 -e production     # Uses .env.production"
-            echo "  $0 -e staging        # Uses .env.staging"
-            exit 0
-            ;;
-        *)
-            echo "Unknown option: $1"
-            echo "Use -h or --help for usage information"
-            exit 1
-            ;;
-    esac
-done
-
-echo "🚀 Setting up $SERVICE_NAME for $ENV_NAME environment..."
-
 # Color codes for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
 log_info() {
@@ -63,6 +34,62 @@ log_warning() {
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
+
+log_header() {
+    echo -e "${PURPLE}$1${NC}"
+}
+
+# Show usage information
+show_usage() {
+    echo "Usage: $0 [options]"
+    echo ""
+    echo "Options:"
+    echo "  --skip-deps              Skip dependency installation"
+    echo "  --skip-db                Skip database setup"
+    echo "  --build                  Force rebuild Docker images"
+    echo "  --logs                   Show logs after startup"
+    echo "  -h, --help               Show this help message"
+    echo ""
+    echo "Examples:"
+    echo "  $0                       # Standard setup"
+    echo "  $0 --build --logs        # Rebuild and show logs"
+}
+
+# Parse command line arguments
+SKIP_DEPS=false
+SKIP_DB=false
+FORCE_BUILD=false
+SHOW_LOGS=false
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --skip-deps)
+            SKIP_DEPS=true
+            shift
+            ;;
+        --skip-db)
+            SKIP_DB=true
+            shift
+            ;;
+        --build)
+            FORCE_BUILD=true
+            shift
+            ;;
+        --logs)
+            SHOW_LOGS=true
+            shift
+            ;;
+        -h|--help)
+            show_usage
+            exit 0
+            ;;
+        *)
+            log_error "Unknown option: $1"
+            show_usage
+            exit 1
+            ;;
+    esac
+done
 
 # Function to check if a command exists
 command_exists() {
@@ -82,375 +109,314 @@ detect_os() {
     fi
 }
 
-# Function to load environment variables from .env file
-load_env_file() {
-    local env_file=""
+# Check prerequisites
+check_prerequisites() {
+    log_info "Checking prerequisites..."
     
-    if [ "$ENV_NAME" = "development" ]; then
-        env_file="$SERVICE_PATH/.env.development"
-    else
-        env_file="$SERVICE_PATH/.env.$ENV_NAME"
-    fi
-    
-    log_info "Loading environment variables from $(basename $env_file)..."
-    
-    if [ ! -f "$env_file" ]; then
-        log_error "Environment file not found: $env_file"
-        log_info "Available environment files:"
-        ls -la "$SERVICE_PATH"/.env* 2>/dev/null || log_info "No .env files found"
-        exit 1
-    fi
-    
-    # Load environment variables safely
-    set -a  # automatically export all variables
-    
-    # Source the file while filtering out comments and empty lines
-    while IFS= read -r line || [ -n "$line" ]; do
-        # Skip empty lines and comments
-        if [[ -n "$line" && ! "$line" =~ ^[[:space:]]*# ]]; then
-            # Export the variable if it contains an equals sign
-            if [[ "$line" =~ ^[^=]+= ]]; then
-                export "$line"
-            fi
-        fi
-    done < "$env_file"
-    
-    set +a  # stop automatically exporting
-    
-    log_success "Environment variables loaded from $(basename $env_file)"
-    
-    # Validate required variables
-    local required_vars=("DB_NAME" "DB_USER" "DB_PASSWORD" "PORT" "NODE_ENV")
-    local missing_vars=()
-    
-    for var in "${required_vars[@]}"; do
-        if [ -z "${!var}" ]; then
-            missing_vars+=("$var")
-        fi
-    done
-    
-    if [ ${#missing_vars[@]} -ne 0 ]; then
-        log_error "Missing required environment variables: ${missing_vars[*]}"
-        log_info "Please ensure these variables are set in $env_file"
-        exit 1
-    fi
-    
-    log_info "Environment: $NODE_ENV"
-    log_info "Port: $PORT"
-    log_info "Database: $DB_NAME"
-    log_info "Database User: $DB_USER"
-}
-
-# Check for Node.js
-check_nodejs() {
-    log_info "Checking Node.js installation..."
-    
+    # Check Node.js
     if command_exists node; then
         NODE_VERSION=$(node --version | sed 's/v//')
         log_success "Node.js $NODE_VERSION is installed"
         
-        # Check if version is 18 or higher
         if [[ $(echo "$NODE_VERSION" | cut -d. -f1) -lt 18 ]]; then
-            log_warning "Node.js version 18+ is recommended. Current version: $NODE_VERSION"
+            log_warning "Node.js version 18+ is recommended. Current: $NODE_VERSION"
         fi
     else
-        log_error "Node.js is not installed. Please install Node.js 18+ and npm"
+        log_error "Node.js is not installed. Please install Node.js 18+"
         exit 1
     fi
     
+    # Check npm
     if command_exists npm; then
         NPM_VERSION=$(npm --version)
         log_success "npm $NPM_VERSION is installed"
     else
-        log_error "npm is not installed. Please install npm"
+        log_error "npm is not installed"
         exit 1
     fi
-}
-
-# Check for PostgreSQL
-check_postgresql() {
-    log_info "Checking PostgreSQL installation..."
     
-    if command_exists psql; then
-        POSTGRES_VERSION=$(psql --version | awk '{print $3}' | sed 's/,.*//g')
-        log_success "PostgreSQL $POSTGRES_VERSION is installed"
+    # Check Docker
+    if command_exists docker; then
+        DOCKER_VERSION=$(docker --version | awk '{print $3}' | sed 's/,//')
+        log_success "Docker $DOCKER_VERSION is installed"
+        
+        # Check if Docker is running
+        if docker info >/dev/null 2>&1; then
+            log_success "Docker daemon is running"
+        else
+            log_error "Docker daemon is not running. Please start Docker."
+            exit 1
+        fi
     else
-        log_error "PostgreSQL is not installed. Please install PostgreSQL 12+"
+        log_error "Docker is not installed. Please install Docker."
+        exit 1
+    fi
+    
+    # Check Docker Compose
+    if command_exists docker-compose || docker compose version >/dev/null 2>&1; then
+        if command_exists docker-compose; then
+            COMPOSE_VERSION=$(docker-compose --version | awk '{print $3}' | sed 's/,//')
+            log_success "Docker Compose $COMPOSE_VERSION is installed"
+        else
+            COMPOSE_VERSION=$(docker compose version --short 2>/dev/null || echo "v2.x")
+            log_success "Docker Compose $COMPOSE_VERSION is installed (as Docker plugin)"
+        fi
+    else
+        log_error "Docker Compose is not installed"
         exit 1
     fi
 }
 
-# Install Node.js dependencies
+# Load and validate environment file
+load_environment() {
+    local env_file="$SERVICE_PATH/.env.$ENVIRONMENT"
+    local template_file="$SERVICE_PATH/.env.$ENVIRONMENT.template"
+    
+    log_info "Loading environment configuration for $ENVIRONMENT..."
+    
+    # Check if environment file exists
+    if [[ ! -f "$env_file" ]]; then
+        if [[ -f "$template_file" ]]; then
+            log_warning "Environment file not found: $(basename $env_file)"
+            log_info "Creating from template: $(basename $template_file)"
+            cp "$template_file" "$env_file"
+            log_warning "Please review and update $env_file with your actual values"
+            log_info "Press any key to continue after updating the file..."
+            read -r
+        else
+            log_error "Neither environment file nor template found"
+            log_info "Expected files:"
+            log_info "  - $env_file"
+            log_info "  - $template_file"
+            exit 1
+        fi
+    fi
+    
+    # Export environment variables
+    set -a
+    source "$env_file"
+    set +a
+    
+    log_success "Environment loaded: $(basename $env_file)"
+    log_info "NODE_ENV: ${NODE_ENV:-$ENVIRONMENT}"
+    log_info "PORT: ${PORT:-3002}"
+    log_info "Database: ${MONGODB_DB_NAME:-user_service_dev}"
+}
+
+# Install dependencies
 install_dependencies() {
+    if [[ "$SKIP_DEPS" == "true" ]]; then
+        log_info "Skipping dependency installation"
+        return
+    fi
+    
     log_info "Installing Node.js dependencies..."
     
     cd "$SERVICE_PATH"
     
-    if [ -f "package.json" ]; then
+    if [[ "$ENVIRONMENT" == "production" ]]; then
+        npm ci --omit=dev
+    else
         npm install
-        log_success "Dependencies installed successfully"
-    else
-        log_error "package.json not found in $SERVICE_PATH"
-        exit 1
     fi
+    
+    log_success "Dependencies installed successfully"
 }
 
-# Setup database
+# Setup database (create seed data scripts if needed)
 setup_database() {
-    log_info "Setting up database: $DB_NAME"
-    
-    # Check if database exists and create if not
-    if ! psql -h ${DB_HOST:-localhost} -U postgres -lqt | cut -d \| -f 1 | grep -qw "$DB_NAME"; then
-        log_info "Creating database: $DB_NAME"
-        createdb -h ${DB_HOST:-localhost} -U postgres "$DB_NAME"
-        log_success "Database created successfully"
-    else
-        log_info "Database $DB_NAME already exists"
+    if [[ "$SKIP_DB" == "true" ]]; then
+        log_info "Skipping database setup"
+        return
     fi
     
-    # Create user if not exists
-    psql -h ${DB_HOST:-localhost} -U postgres -d postgres -c "
-        DO \$\$
-        BEGIN
-            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '$DB_USER') THEN
-                CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';
-            END IF;
-        END
-        \$\$;
-        
-        GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;
-    " > /dev/null 2>&1
+    log_info "Preparing database setup..."
     
-    log_success "Database user configured"
+    # Create database scripts directory if not exists
+    mkdir -p "$SERVICE_PATH/database/scripts"
+    
+    # Create a simple MongoDB init script if it doesn't exist
+    if [[ ! -f "$SERVICE_PATH/database/scripts/init-mongo.js" ]]; then
+        cat > "$SERVICE_PATH/database/scripts/init-mongo.js" << 'EOF'
+// MongoDB initialization script for user-service
+print('Starting MongoDB initialization for user-service...');
+
+// Switch to the user service database
+db = db.getSiblingDB(process.env.MONGO_INITDB_DATABASE || 'user_service_dev');
+
+// Create indexes for better performance
+db.users.createIndex({ "email": 1 }, { unique: true });
+db.users.createIndex({ "username": 1 }, { unique: true });
+db.users.createIndex({ "createdAt": -1 });
+
+// Insert sample data for development
+if (db.users.countDocuments() === 0) {
+    print('Creating sample users...');
+    db.users.insertMany([
+        {
+            username: "admin",
+            email: "admin@aioutlet.com",
+            role: "admin",
+            isActive: true,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        },
+        {
+            username: "testuser",
+            email: "test@aioutlet.com",
+            role: "user",
+            isActive: true,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        }
+    ]);
+    print('Sample users created successfully');
+} else {
+    print('Users collection already has data, skipping seed');
 }
 
-# Run database setup scripts
-run_database_scripts() {
-    if [ -d "$SERVICE_PATH/database" ]; then
-        log_info "Running database setup scripts..."
-        cd "$SERVICE_PATH"
-        
-        if [ -f "database/scripts/setup.js" ]; then
-            log_info "Running database setup..."
-            node database/scripts/setup.js
-            log_success "Database setup completed"
-        else
-            log_warning "Database setup script not found"
-        fi
-    else
-        log_warning "Database directory not found"
-    fi
-}
-
-# Validate setup
-validate_setup() {
-    log_info "Validating setup..."
-    
-    # Check if we can connect to database
-    if command_exists psql; then
-        if psql -h ${DB_HOST:-localhost} -U "$DB_USER" -d "$DB_NAME" -c "SELECT 1;" > /dev/null 2>&1; then
-            log_success "Database connection successful"
-        else
-            log_error "Database connection failed"
-            return 1
-        fi
-    fi
-    
-    # Check if Node.js dependencies are installed
-    if [ -d "$SERVICE_PATH/node_modules" ]; then
-        log_success "Node.js dependencies are installed"
-    else
-        log_error "Node.js dependencies not found"
-        return 1
-    fi
-    
-    return 0
-}
-
-# Create environment file if it doesn't exist
-create_env_template() {
-    local env_file=""
-    
-    if [ "$ENV_NAME" = "development" ]; then
-        env_file="$SERVICE_PATH/.env.development"
-    else
-        env_file="$SERVICE_PATH/.env.$ENV_NAME"
-    fi
-    
-    if [ ! -f "$env_file" ]; then
-        log_info "Creating environment template: $(basename $env_file)"
-        
-        cat > "$env_file" << EOF
-# User Service Environment Configuration - $ENV_NAME
-
-# Server Configuration
-NODE_ENV=$ENV_NAME
-PORT=3002
-HOST=localhost
-
-# Database Configuration
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=users_db
-DB_USER=users_user
-DB_PASSWORD=users_password
-DB_SSL=false
-DB_POOL_MIN=2
-DB_POOL_MAX=10
-
-# External Service URLs
-AUTH_SERVICE_URL=http://localhost:3001
-AUDIT_SERVICE_URL=http://localhost:3007
-NOTIFICATION_SERVICE_URL=http://localhost:3008
-
-# JWT Configuration
-JWT_SECRET=your-super-secret-jwt-key-for-user-service-$ENV_NAME
-JWT_EXPIRES_IN=24h
-
-# Password Security
-BCRYPT_ROUNDS=12
-PASSWORD_MIN_LENGTH=8
-
-# File Upload Configuration
-UPLOAD_PATH=uploads/
-MAX_FILE_SIZE=5242880
-ALLOWED_FILE_TYPES=jpg,jpeg,png,gif
-
-# Email Configuration
-EMAIL_SERVICE=smtp
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=
-SMTP_PASSWORD=
-EMAIL_FROM=noreply@aioutlet.com
-
-# Logging Configuration
-LOG_LEVEL=info
-LOG_FILE=logs/user-service.log
-LOG_MAX_SIZE=10m
-LOG_MAX_FILES=5
-
-# Rate Limiting
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
-
-# Session Configuration
-SESSION_SECRET=your-session-secret-for-user-service-$ENV_NAME
-SESSION_TIMEOUT=3600000
-
-# Profile Configuration
-PROFILE_IMAGE_PATH=uploads/profiles/
-DEFAULT_PROFILE_IMAGE=default-avatar.png
-
-# Account Configuration
-EMAIL_VERIFICATION_REQUIRED=true
-ACCOUNT_LOCKOUT_ATTEMPTS=5
-ACCOUNT_LOCKOUT_DURATION=900000
-
-# Service Registry
-SERVICE_NAME=user-service
-SERVICE_VERSION=1.0.0
-SERVICE_REGISTRY_URL=http://localhost:8761/eureka
-
-# Health Check Configuration
-HEALTH_CHECK_ENABLED=true
-HEALTH_CHECK_INTERVAL=30000
-
-# User Preferences
-DEFAULT_TIMEZONE=UTC
-DEFAULT_LANGUAGE=en
-TIMEZONE_OPTIONS=UTC,EST,PST,GMT
-LANGUAGE_OPTIONS=en,es,fr,de
-
-# Cache Configuration
-CACHE_TTL=300
-CACHE_ENABLED=true
-
-# Security Configuration
-MAX_LOGIN_ATTEMPTS=5
-LOGIN_LOCKOUT_DURATION=15
-PASSWORD_RESET_EXPIRY=3600
-VERIFICATION_TOKEN_EXPIRY=86400
+print('MongoDB initialization completed successfully');
 EOF
-        
-        log_success "Environment template created: $(basename $env_file)"
-        log_warning "Please review and update the configuration values as needed"
+        log_success "Created MongoDB initialization script"
     fi
+    
+    log_success "Database setup prepared"
 }
 
-# Main execution
-main() {
-    echo "=========================================="
-    echo "👥 User Service Environment Setup"
-    echo "=========================================="
-    
-    OS=$(detect_os)
-    log_info "Detected OS: $OS"
-    log_info "Target Environment: $ENV_NAME"
-    
-    # Create environment file if it doesn't exist
-    create_env_template
-    
-    # Load environment variables
-    load_env_file
-    
-    # Check prerequisites
-    check_nodejs
-    check_postgresql
-    
-    # Install dependencies
-    install_dependencies
-    
-    # Setup database
-    setup_database
-    
-    # Run database scripts
-    run_database_scripts
-    
-    # Validate setup
-    if validate_setup; then
-        echo "=========================================="
-        log_success "✅ User Service setup completed successfully!"
-        echo "=========================================="
-        echo ""
-        
-        # Start services with Docker Compose
-        log_info "� Starting services with Docker Compose..."
-        if docker-compose up -d; then
-            log_success "Services started successfully"
-            echo ""
-            log_info "⏳ Waiting for services to be ready..."
-            sleep 15
-            
-            # Check service health
-            if docker-compose ps | grep -q "Up.*healthy"; then
-                log_success "Services are healthy and ready"
-            else
-                log_warning "Services may still be starting up"
-            fi
-        else
-            log_error "Failed to start services with Docker Compose"
-            return 1
-        fi
-        echo ""
-        
-        echo "👥 Setup Summary:"
-        echo "  • Environment: $NODE_ENV"
-        echo "  • Port: $PORT"
-        echo "  • Database: $DB_NAME"
-        echo "  • Health Check: http://localhost:$PORT/health"
-        echo "  • API Base: http://localhost:$PORT/api/v1"
-        echo ""
-        echo "🚀 Service is now running:"
-        echo "  • View status: docker-compose ps"
-        echo "  • View logs: docker-compose logs -f"
-        echo "  • Stop services: bash .ops/teardown.sh"
-        echo ""
+# Get appropriate docker-compose command
+get_compose_command() {
+    if command_exists docker-compose; then
+        echo "docker-compose"
     else
-        log_error "Setup validation failed"
-        exit 1
+        echo "docker compose"
     fi
 }
 
-# Run main function
+# Build and start services
+start_services() {
+    log_info "Starting services with Docker Compose for $ENVIRONMENT environment..."
+    
+    cd "$SERVICE_PATH"
+    
+    local compose_cmd=$(get_compose_command)
+    local compose_files="-f docker-compose.yml"
+    
+    # Add environment-specific override file
+    case $ENVIRONMENT in
+        development)
+            # docker-compose.override.yml is loaded automatically
+            ;;
+        staging)
+            compose_files="$compose_files -f docker-compose.staging.yml"
+            ;;
+        production)
+            compose_files="$compose_files -f docker-compose.production.yml"
+            ;;
+    esac
+    
+    # Create shared network if it doesn't exist
+    docker network create aioutlet-network 2>/dev/null || log_info "Network aioutlet-network already exists"
+    
+    # Build images if requested or if they don't exist
+    if [[ "$FORCE_BUILD" == "true" ]]; then
+        log_info "Building Docker images..."
+        $compose_cmd $compose_files build --no-cache
+    fi
+    
+    # Start services
+    log_info "Starting services..."
+    export NODE_ENV=$ENVIRONMENT
+    $compose_cmd $compose_files up -d
+    
+    # Wait for services to be ready
+    log_info "Waiting for services to be ready..."
+    local max_attempts=60
+    local attempt=1
+    
+    while [[ $attempt -le $max_attempts ]]; do
+        if $compose_cmd $compose_files ps | grep -q "healthy"; then
+            log_success "Services are healthy and ready!"
+            break
+        fi
+        
+        if [[ $attempt -eq $max_attempts ]]; then
+            log_warning "Services may still be starting up (timeout reached)"
+            break
+        fi
+        
+        echo -n "."
+        sleep 2
+        ((attempt++))
+    done
+    echo
+    
+    # Show service status
+    log_info "Service Status:"
+    $compose_cmd $compose_files ps
+}
+
+# Display service information
+show_service_info() {
+    local port=${PORT:-3002}
+    local host=${HOST:-localhost}
+    
+    if [[ "$host" == "0.0.0.0" ]]; then
+        host="localhost"
+    fi
+    
+    echo
+    log_header "🎉 User Service Setup Complete!"
+    echo "======================================="
+    log_success "Environment: $ENVIRONMENT"
+    log_success "Service URL: http://$host:$port"
+    log_success "Health Check: http://$host:$port/health"
+    log_success "API Base URL: http://$host:$port/api/users"
+    echo
+    log_info "💡 Useful Commands:"
+    echo "   • View status:    $(get_compose_command) ps"
+    echo "   • View logs:      $(get_compose_command) logs -f"
+    echo "   • Stop services:  $(get_compose_command) down"
+    echo "   • Restart:        ./.ops/setup.sh --env=$ENVIRONMENT"
+    echo
+    
+    if [[ "$SHOW_LOGS" == "true" ]]; then
+        log_info "📋 Showing recent logs..."
+        $(get_compose_command) logs --tail=50
+    fi
+}
+
+# Cleanup function for errors
+cleanup_on_error() {
+    log_error "Setup failed! Cleaning up..."
+    cd "$SERVICE_PATH"
+    $(get_compose_command) down 2>/dev/null || true
+}
+
+# Main execution function
+main() {
+    # Set up error handling
+    trap cleanup_on_error ERR
+    
+    log_header "============================================"
+    log_header "👥 User Service Environment Setup"
+    log_header "============================================"
+    
+    local os=$(detect_os)
+    log_info "Detected OS: $os"
+    log_info "Target Environment: $ENVIRONMENT"
+    log_info "Service Path: $SERVICE_PATH"
+    echo
+    
+    # Execute setup steps
+    check_prerequisites
+    load_environment
+    install_dependencies
+    setup_database
+    start_services
+    show_service_info
+    
+    log_success "✅ Setup completed successfully!"
+}
+
+# Execute main function with all arguments
 main "$@"
