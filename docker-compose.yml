@@ -1,19 +1,19 @@
 services:
   user-service:
+    image: user-service:prod
     build:
       context: .
       target: production
     container_name: user-service
     restart: unless-stopped
     environment:
-      - NODE_ENV=${NODE_ENV:-development}
+      - NODE_ENV=${NODE_ENV:-production}
     env_file:
       - .env
     depends_on:
       mongo-user-service:
         condition: service_healthy
     networks:
-      - user-network
       - aioutlet-network
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:${PORT:-3002}/health']
@@ -23,21 +23,21 @@ services:
       start_period: 40s
     labels:
       - 'com.aioutlet.service=user-service'
-      - 'com.aioutlet.environment=${NODE_ENV:-development}'
+      - 'com.aioutlet.environment=${NODE_ENV:-production}'
 
   mongo-user-service:
-    image: mongo:7-jammy
+    image: mongo:latest
     container_name: user-mongo
     restart: unless-stopped
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=${MONGODB_USERNAME:-userservice}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASSWORD:-user_mongo_dev_123}
-      - MONGO_INITDB_DATABASE=${MONGODB_DB_NAME:-user_service_dev}
+      - MONGO_INITDB_ROOT_USERNAME=${MONGODB_USERNAME:-prod_userservice}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASSWORD:-your_secure_production_mongodb_password}
+      - MONGO_INITDB_DATABASE=${MONGODB_DB_NAME:-user_service_prod_db}
     volumes:
       - mongo-user-service-data:/data/db
       - ./database/scripts:/docker-entrypoint-initdb.d:ro
     networks:
-      - user-network
+      - aioutlet-network
     healthcheck:
       test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
       interval: 30s
@@ -46,7 +46,7 @@ services:
       start_period: 10s
     labels:
       - 'com.aioutlet.service=mongo-user-service'
-      - 'com.aioutlet.environment=${NODE_ENV:-development}'
+      - 'com.aioutlet.environment=${NODE_ENV:-production}'
 
 volumes:
   mongo-user-service-data:
@@ -54,9 +54,5 @@ volumes:
       - 'com.aioutlet.service=user-service'
 
 networks:
-  user-network:
-    driver: bridge
-    labels:
-      - 'com.aioutlet.service=user-service'
   aioutlet-network:
     external: true

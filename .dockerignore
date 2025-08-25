@@ -17,7 +17,8 @@ build/
 
 # Environment files
 .env*
-!.env.example
+!.env.development
+!.env.production
 
 # IDE and editor files
 .vscode/

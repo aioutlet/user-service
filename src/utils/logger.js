@@ -14,9 +14,16 @@ const isTest = process.env.NODE_ENV === 'test';
 const serviceName = process.env.SERVICE_NAME || 'user-service';
 const logLevel = process.env.LOG_LEVEL || (isDevelopment ? 'debug' : 'info');
 const logFormat = process.env.LOG_FORMAT || (isProduction ? 'json' : 'console');
-const logToFile = process.env.LOG_TO_FILE === 'true';
+
+// For local development, default to no file logging unless explicitly enabled
+const logToFile = isDevelopment ? process.env.LOG_TO_FILE === 'true' : process.env.LOG_TO_FILE !== 'false';
+
 const logToConsole = process.env.LOG_TO_CONSOLE !== 'false';
-const logFilePath = process.env.LOG_FILE_PATH || `${serviceName}.log`;
+
+// Use appropriate log file path based on environment
+const logFilePath = isDevelopment
+  ? `./logs/${serviceName}.log` // Local relative path for development
+  : process.env.LOG_FILE_PATH || `/app/logs/${serviceName}.log`; // Container path for production
 
 // Custom format for development console output
 const consoleFormat = winston.format.combine(
@@ -27,9 +34,15 @@ const consoleFormat = winston.format.combine(
 
     // Build metadata string
     const metaFields = [];
-    if (userId) {metaFields.push(`userId=${userId}`);}
-    if (operation) {metaFields.push(`operation=${operation}`);}
-    if (duration) {metaFields.push(`duration=${duration}ms`);}
+    if (userId) {
+      metaFields.push(`userId=${userId}`);
+    }
+    if (operation) {
+      metaFields.push(`operation=${operation}`);
+    }
+    if (duration) {
+      metaFields.push(`duration=${duration}ms`);
+    }
 
     // Add remaining metadata
     Object.keys(meta).forEach((key) => {
@@ -42,7 +55,7 @@ const consoleFormat = winston.format.combine(
     const logMessage = `[${ts}] [${level.toUpperCase()}] ${serviceName} ${corrId}: ${message}${metaStr}`;
 
     return isDevelopment ? colorizeLevel(level, logMessage) : logMessage;
-  }),
+  })
 );
 
 // JSON format for production
@@ -58,7 +71,7 @@ const jsonFormat = winston.format.combine(
       message: info.message,
       ...info,
     });
-  }),
+  })
 );
 
 // Create transports based on configuration
@@ -69,7 +82,7 @@ if (logToConsole && !isTest) {
     new winston.transports.Console({
       format: logFormat === 'json' ? jsonFormat : consoleFormat,
       level: logLevel,
-    }),
+    })
   );
 }
 
@@ -79,7 +92,7 @@ if (logToFile) {
       filename: logFilePath,
       format: jsonFormat,
       level: logLevel,
-    }),
+    })
   );
 }
 
@@ -88,8 +101,20 @@ const logger = winston.createLogger({
   level: logLevel,
   transports,
   // Handle uncaught exceptions and rejections
-  exceptionHandlers: logToFile ? [new winston.transports.File({ filename: `${serviceName}-exceptions.log` })] : [],
-  rejectionHandlers: logToFile ? [new winston.transports.File({ filename: `${serviceName}-rejections.log` })] : [],
+  exceptionHandlers: logToFile
+    ? [
+        new winston.transports.File({
+          filename: isDevelopment ? `./logs/${serviceName}-exceptions.log` : `${serviceName}-exceptions.log`,
+        }),
+      ]
+    : [],
+  rejectionHandlers: logToFile
+    ? [
+        new winston.transports.File({
+          filename: isDevelopment ? `./logs/${serviceName}-rejections.log` : `${serviceName}-rejections.log`,
+        }),
+      ]
+    : [],
 });
 
 /**

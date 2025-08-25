@@ -24,24 +24,14 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "seed": "node scripts/seed.js",
-    "clear": "node scripts/clear.js",
+    "seed": "node database/scripts/seed.js",
+    "clear": "node database/scripts/clear.js",
     "test": "jest --runInBand",
     "test:watch": "jest --runInBand --watch",
     "test:coverage": "jest --runInBand --coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "validate": "node -r dotenv/config -e \"import('./src/config/index.js').then(() => console.log('✅ Configuration valid'))\"",
-    "docker:build": "docker build -t user-service:latest .",
-    "docker:build:dev": "docker build --target development -t user-service:dev .",
-    "docker:up": "./.ops/setup.sh",
-    "docker:down": "./.ops/teardown.sh",
-    "docker:logs": "docker-compose logs -f",
-    "db:setup": "./.ops/db-manage.sh setup",
-    "db:seed": "./.ops/db-manage.sh seed",
-    "db:reset": "./.ops/db-manage.sh reset",
-    "db:status": "./.ops/db-manage.sh status",
-    "health": "curl -f http://localhost:${PORT:-3002}/health || echo 'Service not responding'"
+    "validate": "node -r dotenv/config -e \"import('./src/config/index.js').then(() => console.log('✅ Configuration valid'))\""
   },
   "dependencies": {
     "@opentelemetry/api": "^1.9.0",
