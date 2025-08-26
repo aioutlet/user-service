@@ -36,6 +36,11 @@ export const createUser = asyncHandler(async (req, res, next) => {
     req.body.isEmailVerified = true;
   }
 
+  // Check for valid email type to prevent NoSQL injection
+  if (typeof email !== 'string') {
+    return next(new ErrorResponse('Invalid email type', 400, 'INVALID_EMAIL'));
+  }
+
   // Check for duplicate email
   const existingUser = await User.findOne({ email });
   if (existingUser) {
