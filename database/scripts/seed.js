@@ -8,7 +8,6 @@ import { dirname, join } from 'path';
 
 // Setup __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 dotenv.config();
 

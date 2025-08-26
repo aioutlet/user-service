@@ -55,7 +55,7 @@ const consoleFormat = winston.format.combine(
     const logMessage = `[${ts}] [${level.toUpperCase()}] ${serviceName} ${corrId}: ${message}${metaStr}`;
 
     return isDevelopment ? colorizeLevel(level, logMessage) : logMessage;
-  })
+  }),
 );
 
 // JSON format for production
@@ -71,7 +71,7 @@ const jsonFormat = winston.format.combine(
       message: info.message,
       ...info,
     });
-  })
+  }),
 );
 
 // Create transports based on configuration
@@ -82,7 +82,7 @@ if (logToConsole && !isTest) {
     new winston.transports.Console({
       format: logFormat === 'json' ? jsonFormat : consoleFormat,
       level: logLevel,
-    })
+    }),
   );
 }
 
@@ -92,7 +92,7 @@ if (logToFile) {
       filename: logFilePath,
       format: jsonFormat,
       level: logLevel,
-    })
+    }),
   );
 }
 
@@ -100,21 +100,30 @@ if (logToFile) {
 const logger = winston.createLogger({
   level: logLevel,
   transports,
+  exitOnError: false, // Don't exit process on handled exceptions
   // Handle uncaught exceptions and rejections
   exceptionHandlers: logToFile
     ? [
-        new winston.transports.File({
-          filename: isDevelopment ? `./logs/${serviceName}-exceptions.log` : `${serviceName}-exceptions.log`,
-        }),
-      ]
-    : [],
+      new winston.transports.File({
+        filename: isDevelopment ? `./logs/${serviceName}-exceptions.log` : `${serviceName}-exceptions.log`,
+      }),
+    ]
+    : [
+      new winston.transports.Console({
+        format: consoleFormat,
+      }),
+    ],
   rejectionHandlers: logToFile
     ? [
-        new winston.transports.File({
-          filename: isDevelopment ? `./logs/${serviceName}-rejections.log` : `${serviceName}-rejections.log`,
-        }),
-      ]
-    : [],
+      new winston.transports.File({
+        filename: isDevelopment ? `./logs/${serviceName}-rejections.log` : `${serviceName}-rejections.log`,
+      }),
+    ]
+    : [
+      new winston.transports.Console({
+        format: consoleFormat,
+      }),
+    ],
 });
 
 /**
