@@ -1,7 +1,6 @@
 /**
  * Application Configuration
  */
-import { validateRequired, getBoolean, getInteger, getStringArray, buildMongoDBUri } from '../utils/env.js';
 
 /**
  * Configuration object
@@ -14,13 +13,13 @@ const config = {
 
   // Server
   server: {
-    port: getInteger('PORT', 3002),
+    port: parseInt(process.env.PORT, 10) || 3002,
     host: process.env.HOST || '0.0.0.0',
   },
 
   // Database
   database: {
-    uri: buildMongoDBUri(),
+    uri: process.env.MONGODB_URI,
     options: {
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 5000,
@@ -30,7 +29,7 @@ const config = {
 
   // JWT
   jwt: {
-    secret: validateRequired('JWT_SECRET'),
+    secret: process.env.JWT_SECRET,
     expiresIn: process.env.JWT_EXPIRES_IN || '24h',
   },
 
@@ -42,17 +41,19 @@ const config = {
 
   // Security
   security: {
-    bcryptRounds: getInteger('BCRYPT_ROUNDS', 12),
-    corsOrigin: getStringArray('CORS_ORIGIN', ['http://localhost:3000']),
-    enableSecurityHeaders: getBoolean('ENABLE_SECURITY_HEADERS', false),
-    enableRateLimiting: getBoolean('ENABLE_RATE_LIMITING', true),
+    bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS, 10) || 12,
+    corsOrigin: process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim())
+      : ['http://localhost:3000'],
+    enableSecurityHeaders: process.env.ENABLE_SECURITY_HEADERS === 'true',
+    enableRateLimiting: process.env.ENABLE_RATE_LIMITING !== 'false',
   },
 
   // Logging
   logging: {
     level: process.env.LOG_LEVEL || 'info',
-    toConsole: getBoolean('LOG_TO_CONSOLE', true),
-    toFile: getBoolean('LOG_TO_FILE', false),
+    toConsole: process.env.LOG_TO_CONSOLE !== 'false',
+    toFile: process.env.LOG_TO_FILE === 'true',
     filePath: process.env.LOG_FILE_PATH || 'logs/user-service.log',
   },
 };

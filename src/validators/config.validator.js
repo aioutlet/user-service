@@ -3,16 +3,27 @@
  * Validates application configuration for completeness and production readiness
  */
 
-import { config } from '../config/index.js';
-
 /**
  * Validate application configuration
+ * @param {Object} config - The configuration object to validate
  * @throws {Error} If configuration validation fails
  */
-export const validateConfig = () => {
+export const validateConfig = (config) => {
   const errors = [];
 
-  // Check required fields
+  // === Database Configuration Validation ===
+  if (!config.database.uri) {
+    errors.push('Database configuration is incomplete');
+  } else {
+    try {
+      // Basic URI validation
+      new URL(config.database.uri.replace('mongodb://', 'http://').replace('mongodb+srv://', 'http://'));
+    } catch {
+      errors.push('Database URI format is invalid');
+    }
+  }
+
+  // === JWT Configuration Validation ===
   if (!config.jwt.secret || config.jwt.secret.includes('CHANGE_THIS')) {
     errors.push('JWT_SECRET must be set and not contain default values');
   }
@@ -21,11 +32,37 @@ export const validateConfig = () => {
     errors.push('JWT_SECRET should be at least 32 characters long');
   }
 
-  if (!config.database.uri) {
-    errors.push('Database configuration is incomplete');
+  // Check for common weak secrets
+  if (config.jwt.secret) {
+    const weakSecrets = ['secret', 'password', '123456', 'jwt_secret', 'change_me'];
+    if (weakSecrets.some((weak) => config.jwt.secret.toLowerCase().includes(weak))) {
+      errors.push('JWT_SECRET appears to be weak - use a strong, random secret');
+    }
   }
 
-  // Production-specific validations
+  // === Security Configuration Validation ===
+  // Validate CORS origins
+  if (config.security.corsOrigin && Array.isArray(config.security.corsOrigin)) {
+    const invalidOrigins = config.security.corsOrigin.filter((origin) => {
+      try {
+        new URL(origin);
+        return false;
+      } catch {
+        return true;
+      }
+    });
+
+    if (invalidOrigins.length > 0) {
+      errors.push(`Invalid CORS origins: ${invalidOrigins.join(', ')}`);
+    }
+  }
+
+  // Validate bcrypt rounds
+  if (config.security.bcryptRounds < 4 || config.security.bcryptRounds > 20) {
+    errors.push('BCRYPT_ROUNDS must be between 4 and 20');
+  }
+
+  // === Production-specific validations ===
   if (config.isProduction) {
     if (config.logging.level === 'debug') {
       errors.push('LOG_LEVEL should not be debug in production');
@@ -46,7 +83,7 @@ export const validateConfig = () => {
     }
   }
 
-  // Development-specific validations
+  // === Development-specific validations ===
   if (config.isDevelopment) {
     // Warn about weak settings in development
     if (config.security.bcryptRounds > 12) {
@@ -61,75 +98,6 @@ export const validateConfig = () => {
   console.log('✅ Configuration validation passed');
 };
 
-/**
- * Validate specific configuration sections
- */
-export const validateDatabaseConfig = () => {
-  if (!config.database.uri) {
-    throw new Error('Database URI is required');
-  }
-
-  try {
-    // Basic URI validation
-    new URL(config.database.uri.replace('mongodb://', 'http://').replace('mongodb+srv://', 'http://'));
-  } catch {
-    throw new Error('Database URI format is invalid');
-  }
-};
-
-export const validateJWTConfig = () => {
-  if (!config.jwt.secret) {
-    throw new Error('JWT_SECRET is required');
-  }
-
-  if (config.jwt.secret.length < 32) {
-    throw new Error('JWT_SECRET must be at least 32 characters long');
-  }
-
-  // Check for common weak secrets
-  const weakSecrets = ['secret', 'password', '123456', 'jwt_secret', 'change_me'];
-  if (weakSecrets.some((weak) => config.jwt.secret.toLowerCase().includes(weak))) {
-    throw new Error('JWT_SECRET appears to be weak - use a strong, random secret');
-  }
-};
-
-export const validateSecurityConfig = () => {
-  // Validate CORS origins
-  if (config.security.corsOrigin && Array.isArray(config.security.corsOrigin)) {
-    const invalidOrigins = config.security.corsOrigin.filter((origin) => {
-      try {
-        new URL(origin);
-        return false;
-      } catch {
-        return true;
-      }
-    });
-
-    if (invalidOrigins.length > 0) {
-      throw new Error(`Invalid CORS origins: ${invalidOrigins.join(', ')}`);
-    }
-  }
-
-  // Validate bcrypt rounds
-  if (config.security.bcryptRounds < 4 || config.security.bcryptRounds > 20) {
-    throw new Error('BCRYPT_ROUNDS must be between 4 and 20');
-  }
-};
-
-/**
- * Run all configuration validations
- */
-export const runAllValidations = () => {
-  validateDatabaseConfig();
-  validateJWTConfig();
-  validateSecurityConfig();
-  validateConfig();
-};
-
 export default {
   validateConfig,
-  validateDatabaseConfig,
-  validateJWTConfig,
-  validateSecurityConfig,
-  runAllValidations,
 };

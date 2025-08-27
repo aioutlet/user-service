@@ -58,14 +58,14 @@ router.patch(
   requireAuth,
   paymentManagementRateLimit,
   sensitiveOperationsSlowDown,
-  updatePaymentMethod
+  updatePaymentMethod,
 );
 router.delete(
   '/paymentmethods/:paymentId',
   requireAuth,
   paymentManagementRateLimit,
   sensitiveOperationsSlowDown,
-  removePaymentMethod
+  removePaymentMethod,
 );
 
 // Wishlist management routes

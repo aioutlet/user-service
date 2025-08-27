@@ -20,7 +20,7 @@ const app = express();
 
 // Validate configuration before starting the app
 try {
-  validateConfig();
+  validateConfig(config);
 } catch (error) {
   console.error('❌ Configuration Error:', error.message);
   process.exit(1);
@@ -31,7 +31,7 @@ app.use(
   cors({
     origin: config.security.corsOrigin,
     credentials: true,
-  })
+  }),
 );
 
 app.use(correlationIdMiddleware); // Add correlation ID middleware first
