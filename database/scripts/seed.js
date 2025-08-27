@@ -11,28 +11,16 @@ const __filename = fileURLToPath(import.meta.url);
 
 dotenv.config();
 
-const MONGODB_CONNECTION_SCHEME = process.env.MONGODB_CONNECTION_SCHEME || 'mongodb';
-const MONGODB_HOST = process.env.MONGODB_HOST || 'mongo-user-service';
-const MONGODB_PORT = process.env.MONGODB_PORT || '27017';
-const MONGODB_DB_NAME = process.env.MONGODB_DB_NAME || 'user_service_dev_db';
-const MONGODB_USERNAME = process.env.MONGODB_USERNAME || 'userservice';
-const MONGODB_PASSWORD = process.env.MONGODB_PASSWORD || 'user_mongo_dev_123';
-const MONGODB_DB_PARAMS = process.env.MONGODB_DB_PARAMS || 'authSource=admin';
+// Use simplified MONGODB_URI from environment
+const MONGODB_URI =
+  process.env.MONGODB_URI || 'mongodb://dev_user:dev_pass_123@localhost:27017/user_service_dev_db?authSource=admin';
 
-let mongodb_uri = `${MONGODB_CONNECTION_SCHEME}://`;
-if (MONGODB_USERNAME) {
-  mongodb_uri += `${MONGODB_USERNAME}:${MONGODB_PASSWORD}@`;
-}
-mongodb_uri += `${MONGODB_HOST}:${MONGODB_PORT}/${MONGODB_DB_NAME}`;
-if (MONGODB_DB_PARAMS) {
-  mongodb_uri += `?${MONGODB_DB_PARAMS}`;
-}
-
-console.log(`🔌 Connecting to MongoDB: ${mongodb_uri.replace(MONGODB_PASSWORD, '***')}`);
+console.log(`🔌 Connecting to MongoDB...`);
+console.log(`� URI: ${MONGODB_URI.replace(/:[^:@]*@/, ':***@')}`); // Hide password in logs
 
 async function seed() {
   try {
-    await mongoose.connect(mongodb_uri);
+    await mongoose.connect(MONGODB_URI);
     console.log('✅ Connected to MongoDB');
 
     // Clear existing data first
