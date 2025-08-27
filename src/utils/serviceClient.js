@@ -77,7 +77,6 @@ class ServiceClient {
 
 // Pre-configured service clients
 export const userServiceClient = new ServiceClient(process.env.USER_SERVICE_URL || 'http://localhost:5000');
-export const authServiceClient = new ServiceClient(process.env.AUTH_SERVICE_URL || 'http://localhost:4000');
 export const productServiceClient = new ServiceClient(process.env.PRODUCT_SERVICE_URL || 'http://localhost:8000');
 export const inventoryServiceClient = new ServiceClient(process.env.INVENTORY_SERVICE_URL || 'http://localhost:3000');
 export const orderServiceClient = new ServiceClient(process.env.ORDER_SERVICE_URL || 'http://localhost:7000');

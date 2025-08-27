@@ -37,7 +37,6 @@ export const config = {
 
   // External Services
   services: {
-    auth: process.env.AUTH_SERVICE_URL || 'http://localhost:3001',
     audit: process.env.AUDIT_SERVICE_URL || 'http://localhost:3007',
     notification: process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3003',
   },
