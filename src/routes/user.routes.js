@@ -21,7 +21,9 @@ import {
   removeFromWishlist,
 } from '../controllers/user.wishlist.controller.js';
 import { requireAuth } from '../middlewares/auth.middleware.js';
-import {
+import rateLimitMiddleware from '../middlewares/rateLimit.middleware.js';
+
+const {
   profileRateLimit,
   userCreationRateLimit,
   addressManagementRateLimit,
@@ -29,7 +31,7 @@ import {
   wishlistRateLimit,
   userLookupRateLimit,
   sensitiveOperationsSlowDown,
-} from '../middlewares/rateLimit.middleware.js';
+} = rateLimitMiddleware;
 
 const router = express.Router();
 
@@ -56,14 +58,14 @@ router.patch(
   requireAuth,
   paymentManagementRateLimit,
   sensitiveOperationsSlowDown,
-  updatePaymentMethod,
+  updatePaymentMethod
 );
 router.delete(
   '/paymentmethods/:paymentId',
   requireAuth,
   paymentManagementRateLimit,
   sensitiveOperationsSlowDown,
-  removePaymentMethod,
+  removePaymentMethod
 );
 
 // Wishlist management routes

@@ -6,7 +6,7 @@ import { validateRequired, getBoolean, getInteger, getStringArray, buildMongoDBU
 /**
  * Configuration object
  */
-export const config = {
+const config = {
   // Environment
   env: process.env.NODE_ENV || 'development',
   isDevelopment: process.env.NODE_ENV === 'development',
@@ -55,43 +55,6 @@ export const config = {
     toFile: getBoolean('LOG_TO_FILE', false),
     filePath: process.env.LOG_FILE_PATH || 'logs/user-service.log',
   },
-};
-
-/**
- * Validate configuration
- */
-export const validateConfig = () => {
-  const errors = [];
-
-  // Check required fields
-  if (!config.jwt.secret || config.jwt.secret.includes('CHANGE_THIS')) {
-    errors.push('JWT_SECRET must be set and not contain default values');
-  }
-
-  if (config.jwt.secret && config.jwt.secret.length < 32) {
-    errors.push('JWT_SECRET should be at least 32 characters long');
-  }
-
-  if (!config.database.uri) {
-    errors.push('Database configuration is incomplete');
-  }
-
-  // Production-specific validations
-  if (config.isProduction) {
-    if (config.logging.level === 'debug') {
-      errors.push('LOG_LEVEL should not be debug in production');
-    }
-
-    if (!config.security.enableSecurityHeaders) {
-      errors.push('Security headers should be enabled in production');
-    }
-  }
-
-  if (errors.length > 0) {
-    throw new Error(`Configuration validation failed:\n${errors.join('\n')}`);
-  }
-
-  console.log('✅ Configuration validation passed');
 };
 
 export default config;

@@ -2,7 +2,9 @@ import express from 'express';
 import { getUsers, getUser, updateUser, deleteUser } from '../controllers/admin.controller.js';
 import { requireAuth } from '../middlewares/auth.middleware.js';
 import { requireRole } from '../middlewares/role.middleware.js';
-import { adminRateLimit, sensitiveOperationsSlowDown } from '../middlewares/rateLimit.middleware.js';
+import rateLimitMiddleware from '../middlewares/rateLimit.middleware.js';
+
+const { adminRateLimit, sensitiveOperationsSlowDown } = rateLimitMiddleware;
 
 const router = express.Router();
 

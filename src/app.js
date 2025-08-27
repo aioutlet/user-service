@@ -2,16 +2,19 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 
-import { config, validateConfig } from './config/index.js';
+import config from './config/index.js';
+import { validateConfig } from './validators/config.validator.js';
 import connectDB from './database/connection.js';
 import adminRoutes from './routes/admin.routes.js';
 import homeRoutes from './routes/home.routes.js';
 import userRoutes from './routes/user.routes.js';
 import logger from './utils/logger.js';
 import correlationIdMiddleware from './middlewares/correlationId.middleware.js';
-import { generalRateLimit } from './middlewares/rateLimit.middleware.js';
+import rateLimitMiddleware from './middlewares/rateLimit.middleware.js';
 import { health, readiness, liveness, metrics } from './controllers/operational.controller.js';
 import './utils/tracing.js';
+
+const { generalRateLimit } = rateLimitMiddleware;
 
 const app = express();
 
@@ -28,7 +31,7 @@ app.use(
   cors({
     origin: config.security.corsOrigin,
     credentials: true,
-  }),
+  })
 );
 
 app.use(correlationIdMiddleware); // Add correlation ID middleware first

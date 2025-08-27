@@ -246,9 +246,6 @@ export const userLookupRateLimit = rateLimit(rateLimitConfig.userLookup);
 export const adminRateLimit = rateLimit(rateLimitConfig.admin);
 export const generalRateLimit = rateLimit(rateLimitConfig.general);
 
-// Export slow down middleware for sensitive operations
-export { sensitiveOperationsSlowDown };
-
 // Utility function to skip rate limiting for health checks and monitoring
 export const skipHealthChecks = (req) => {
   return req.path.startsWith('/health') || req.path.startsWith('/metrics');
