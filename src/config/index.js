@@ -11,7 +11,6 @@ export const config = {
   env: process.env.NODE_ENV || 'development',
   isDevelopment: process.env.NODE_ENV === 'development',
   isProduction: process.env.NODE_ENV === 'production',
-  isStaging: process.env.NODE_ENV === 'staging',
 
   // Server
   server: {
@@ -49,43 +48,12 @@ export const config = {
     enableRateLimiting: getBoolean('ENABLE_RATE_LIMITING', true),
   },
 
-  // Rate Limiting
-  rateLimit: {
-    windowMs: getInteger('RATE_LIMIT_WINDOW_MS', 15 * 60 * 1000), // 15 minutes
-    maxRequests: getInteger('RATE_LIMIT_MAX_REQUESTS', 100),
-  },
-
   // Logging
   logging: {
     level: process.env.LOG_LEVEL || 'info',
     toConsole: getBoolean('LOG_TO_CONSOLE', true),
     toFile: getBoolean('LOG_TO_FILE', false),
     filePath: process.env.LOG_FILE_PATH || 'logs/user-service.log',
-  },
-
-  // OpenTelemetry
-  telemetry: {
-    serviceName: process.env.OTEL_SERVICE_NAME || 'user-service',
-    endpoint: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
-    enabled: getBoolean('OTEL_ENABLED', false),
-  },
-
-  // Health Check
-  healthCheck: {
-    enabled: getBoolean('HEALTH_CHECK_ENABLED', true),
-    interval: getInteger('HEALTH_CHECK_INTERVAL', 30000),
-  },
-
-  // Performance
-  performance: {
-    enableCompression: getBoolean('ENABLE_COMPRESSION', true),
-    enableCaching: getBoolean('ENABLE_CACHING', false),
-  },
-
-  // Development
-  development: {
-    hotReload: getBoolean('HOT_RELOAD', false),
-    debugMode: getBoolean('DEBUG_MODE', false),
   },
 };
 
@@ -110,10 +78,6 @@ export const validateConfig = () => {
 
   // Production-specific validations
   if (config.isProduction) {
-    if (config.development.debugMode) {
-      errors.push('DEBUG_MODE should be false in production');
-    }
-
     if (config.logging.level === 'debug') {
       errors.push('LOG_LEVEL should not be debug in production');
     }

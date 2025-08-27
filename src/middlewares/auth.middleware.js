@@ -1,10 +1,10 @@
 import jwt from 'jsonwebtoken';
-import { requireEnv } from '../utils/requireEnv.js';
+import { validateRequired } from '../utils/env.js';
 import User from '../models/user.model.js';
 import logger from '../utils/logger.js';
 import ErrorResponse from '../utils/ErrorResponse.js';
 
-const JWT_SECRET = requireEnv('JWT_SECRET');
+const JWT_SECRET = validateRequired('JWT_SECRET');
 
 /**
  * Middleware for JWT authentication in the user service.

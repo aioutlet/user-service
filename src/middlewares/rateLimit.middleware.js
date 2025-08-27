@@ -2,16 +2,22 @@ import rateLimit from 'express-rate-limit';
 import slowDown from 'express-slow-down';
 import logger from '../utils/logger.js';
 
+// Helper function to get rate limit values from environment variables
+const getRateLimitValue = (envVar, defaultValue) => {
+  const value = parseInt(process.env[envVar], 10);
+  return isNaN(value) ? defaultValue : value;
+};
+
 // Rate limiting configuration based on endpoint sensitivity
 const rateLimitConfig = {
   // User profile operations (moderate)
   profile: {
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 20, // 20 profile operations per window
+    windowMs: getRateLimitValue('RATE_LIMIT_WINDOW_MS', 15 * 60 * 1000), // 15 minutes
+    max: getRateLimitValue('RATE_LIMIT_MAX_REQUESTS', 20), // 20 profile operations per window
     message: {
       error: 'Too many profile operations',
       message: 'Please try again later',
-      retryAfter: 15 * 60 * 1000,
+      retryAfter: getRateLimitValue('RATE_LIMIT_WINDOW_MS', 15 * 60 * 1000),
     },
     standardHeaders: true,
     legacyHeaders: false,
@@ -25,7 +31,7 @@ const rateLimitConfig = {
       res.status(429).json({
         error: 'Too many profile operations',
         message: 'Please try again later',
-        retryAfter: 15 * 60 * 1000,
+        retryAfter: getRateLimitValue('RATE_LIMIT_WINDOW_MS', 15 * 60 * 1000),
       });
     },
   },

@@ -3,60 +3,104 @@
  * These endpoints are used by monitoring systems, load balancers, and DevOps tools
  */
 
+import { performReadinessCheck, performLivenessCheck, getSystemMetrics } from '../utils/healthChecks.js';
+import logger from '../utils/logger.js';
+
 export function health(req, res) {
   res.json({
     status: 'healthy',
     service: 'user-service',
     timestamp: new Date().toISOString(),
     version: process.env.API_VERSION || '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
   });
 }
 
-export function readiness(req, res) {
-  // Add more sophisticated checks here (DB connectivity, external dependencies, etc.)
+export async function readiness(req, res) {
   try {
-    // Example: Check database connectivity
-    // await checkDatabaseConnection();
+    const readinessResult = await performReadinessCheck();
 
-    res.json({
-      status: 'ready',
-      service: 'user-service',
-      timestamp: new Date().toISOString(),
-      checks: {
-        database: 'connected',
-        // Add other dependency checks
-      },
+    // Log readiness check results for monitoring
+    logger.info('Readiness check performed', {
+      status: readinessResult.status,
+      totalCheckTime: readinessResult.totalCheckTime,
+      checks: Object.keys(readinessResult.checks).reduce((acc, key) => {
+        acc[key] = readinessResult.checks[key].status;
+        return acc;
+      }, {}),
     });
-  } catch {
+
+    const statusCode = readinessResult.status === 'ready' ? 200 : 503;
+
+    res.status(statusCode).json({
+      status: readinessResult.status,
+      service: 'user-service',
+      timestamp: readinessResult.timestamp,
+      totalCheckTime: readinessResult.totalCheckTime,
+      checks: readinessResult.checks,
+      ...(readinessResult.error && { error: readinessResult.error }),
+    });
+  } catch (error) {
+    logger.error('Readiness check failed', { error: error.message });
     res.status(503).json({
       status: 'not ready',
       service: 'user-service',
       timestamp: new Date().toISOString(),
-      error: 'Service dependencies not available',
+      error: 'Readiness check failed',
+      details: error.message,
     });
   }
 }
 
-export function liveness(req, res) {
-  // Liveness probe - just check if the app is running
-  res.json({
-    status: 'alive',
-    service: 'user-service',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-  });
+export async function liveness(req, res) {
+  try {
+    const livenessResult = await performLivenessCheck();
+
+    // Log liveness issues for monitoring
+    if (livenessResult.status !== 'alive') {
+      logger.warn('Liveness check failed', {
+        status: livenessResult.status,
+        checks: livenessResult.checks,
+      });
+    }
+
+    const statusCode = livenessResult.status === 'alive' ? 200 : 503;
+
+    res.status(statusCode).json({
+      status: livenessResult.status,
+      service: 'user-service',
+      timestamp: livenessResult.timestamp,
+      uptime: livenessResult.uptime,
+      checks: livenessResult.checks,
+      ...(livenessResult.error && { error: livenessResult.error }),
+    });
+  } catch (error) {
+    logger.error('Liveness check failed', { error: error.message });
+    res.status(503).json({
+      status: 'unhealthy',
+      service: 'user-service',
+      timestamp: new Date().toISOString(),
+      error: 'Liveness check failed',
+      details: error.message,
+    });
+  }
 }
 
 export function metrics(req, res) {
-  // Basic metrics endpoint (could be extended with prometheus metrics)
-  res.json({
-    service: 'user-service',
-    timestamp: new Date().toISOString(),
-    metrics: {
-      uptime: process.uptime(),
-      memory: process.memoryUsage(),
-      pid: process.pid,
-      version: process.version,
-    },
-  });
+  try {
+    const systemMetrics = getSystemMetrics();
+
+    res.json({
+      service: 'user-service',
+      ...systemMetrics,
+    });
+  } catch (error) {
+    logger.error('Metrics collection failed', { error: error.message });
+    res.status(500).json({
+      service: 'user-service',
+      timestamp: new Date().toISOString(),
+      error: 'Metrics collection failed',
+      details: error.message,
+    });
+  }
 }
