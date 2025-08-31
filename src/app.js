@@ -8,11 +8,10 @@ import connectDB from './database/connection.js';
 import adminRoutes from './routes/admin.routes.js';
 import homeRoutes from './routes/home.routes.js';
 import userRoutes from './routes/user.routes.js';
-import logger from './utils/logger.js';
+import logger from './observability/index.js';
 import correlationIdMiddleware from './middlewares/correlationId.middleware.js';
 import rateLimitMiddleware from './middlewares/rateLimit.middleware.js';
 import { health, readiness, liveness, metrics } from './controllers/operational.controller.js';
-import './utils/tracing.js';
 
 const { generalRateLimit } = rateLimitMiddleware;
 
@@ -31,7 +30,7 @@ app.use(
   cors({
     origin: config.security.corsOrigin,
     credentials: true,
-  }),
+  })
 );
 
 app.use(correlationIdMiddleware); // Add correlation ID middleware first

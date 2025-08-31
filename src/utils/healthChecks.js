@@ -5,7 +5,7 @@
 
 import mongoose from 'mongoose';
 import config from '../config/index.js';
-import logger from './logger.js';
+import logger from '../observability/index.js';
 
 /**
  * Check MongoDB database connectivity

@@ -4,7 +4,7 @@
  */
 
 import { performReadinessCheck, performLivenessCheck, getSystemMetrics } from '../utils/healthChecks.js';
-import logger from '../utils/logger.js';
+import logger from '../observability/index.js';
 
 export function health(req, res) {
   res.json({

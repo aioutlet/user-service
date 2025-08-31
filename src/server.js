@@ -30,5 +30,8 @@ const loadEnvironmentConfig = () => {
 // Load environment configuration first
 loadEnvironmentConfig();
 
+// Initialize tracing BEFORE importing the application
+import './tracing-init.js';
+
 // Now import and start the application
 import('./app.js');

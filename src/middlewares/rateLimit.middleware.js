@@ -1,6 +1,6 @@
 import rateLimit from 'express-rate-limit';
 import slowDown from 'express-slow-down';
-import logger from '../utils/logger.js';
+import logger from '../observability/index.js';
 
 // Helper function to get rate limit values from environment variables
 const getRateLimitValue = (envVar, defaultValue) => {
