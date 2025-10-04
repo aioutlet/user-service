@@ -31,7 +31,9 @@ const userValidator = {
   },
   isValidFirstName(firstName) {
     // Optional field, but if provided must be valid
-    if (!firstName) {return true;}
+    if (!firstName) {
+      return true;
+    }
     return (
       typeof firstName === 'string' &&
       firstName.trim().length >= 2 && // Minimum 2 characters
@@ -41,7 +43,9 @@ const userValidator = {
   },
   isValidLastName(lastName) {
     // Optional field, but if provided must be valid
-    if (!lastName) {return true;}
+    if (!lastName) {
+      return true;
+    }
     return (
       typeof lastName === 'string' &&
       lastName.trim().length > 0 &&
@@ -51,8 +55,39 @@ const userValidator = {
   },
   isValidDisplayName(displayName) {
     // Optional field, but if provided must be valid
-    if (!displayName) {return true;}
+    if (!displayName) {
+      return true;
+    }
     return typeof displayName === 'string' && displayName.trim().length > 0 && displayName.trim().length <= 100;
+  },
+  isValidPhoneNumber(phoneNumber) {
+    // Optional field, but if provided must be valid
+    if (!phoneNumber) {
+      return true;
+    }
+
+    if (typeof phoneNumber !== 'string') {
+      return false;
+    }
+
+    const trimmed = phoneNumber.trim();
+
+    // Check length (allowing for international format with + and spaces/dashes)
+    if (trimmed.length < 7 || trimmed.length > 20) {
+      return false;
+    }
+
+    // Allow digits, spaces, hyphens, parentheses, and leading +
+    // Examples: +1234567890, (123) 456-7890, +44 20 7123 4567, 123-456-7890
+    const phoneRegex = /^\+?[\d\s\-\(\)]+$/;
+
+    if (!phoneRegex.test(trimmed)) {
+      return false;
+    }
+
+    // Ensure there are at least 7 digits (minimum for any valid phone number)
+    const digitCount = (trimmed.match(/\d/g) || []).length;
+    return digitCount >= 7 && digitCount <= 15;
   },
   isValidRoles(roles) {
     // Must be array of valid role strings
@@ -61,7 +96,7 @@ const userValidator = {
       Array.isArray(roles) &&
       roles.length > 0 &&
       roles.every(
-        (role) => typeof role === 'string' && role.trim().length > 0 && validRoles.includes(role.trim().toLowerCase()),
+        (role) => typeof role === 'string' && role.trim().length > 0 && validRoles.includes(role.trim().toLowerCase())
       )
     );
   },
