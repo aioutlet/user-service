@@ -35,6 +35,11 @@ const userSchema = new mongoose.Schema(
       trim: true,
       maxlength: [100, 'Display name must be less than 100 characters'],
     },
+    phoneNumber: {
+      type: String,
+      trim: true,
+      maxlength: [20, 'Phone number must be less than 20 characters'],
+    },
     roles: {
       type: [String],
       enum: ['customer', 'admin'],
@@ -59,7 +64,7 @@ const userSchema = new mongoose.Schema(
       default: true,
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 userSchema.pre('save', async function (next) {
