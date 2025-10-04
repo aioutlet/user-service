@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 import addressSchema from '../schemas/address.schema.js';
-import socialSchema from '../schemas/social.schema.js';
 import paymentSchema from '../schemas/payment.schema.js';
 import wishlistSchema from '../schemas/wishlist.schema.js';
 import preferencesSchema from '../schemas/preferences.schema.js';
@@ -54,7 +53,6 @@ const userSchema = new mongoose.Schema(
     paymentMethods: [paymentSchema],
     wishlist: [wishlistSchema],
     preferences: preferencesSchema,
-    social: socialSchema,
     isEmailVerified: {
       type: Boolean,
       default: false,
@@ -64,7 +62,7 @@ const userSchema = new mongoose.Schema(
       default: true,
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 userSchema.pre('save', async function (next) {

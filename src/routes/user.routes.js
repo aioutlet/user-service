@@ -1,12 +1,5 @@
 import express from 'express';
-import {
-  createUser,
-  findByEmail,
-  findBySocial,
-  updateUser,
-  getUser,
-  deleteUser,
-} from '../controllers/user.controller.js';
+import { createUser, findByEmail, updateUser, getUser, deleteUser } from '../controllers/user.controller.js';
 import { getAddresses, addAddress, updateAddress, removeAddress } from '../controllers/user.address.controller.js';
 import {
   getPaymentMethods,
@@ -36,7 +29,6 @@ const {
 const router = express.Router();
 
 router.get('/findByEmail', userLookupRateLimit, findByEmail);
-router.get('/findBySocial', userLookupRateLimit, findBySocial);
 router.post('/', userCreationRateLimit, sensitiveOperationsSlowDown, createUser);
 
 // Self-service routes
@@ -58,14 +50,14 @@ router.patch(
   requireAuth,
   paymentManagementRateLimit,
   sensitiveOperationsSlowDown,
-  updatePaymentMethod,
+  updatePaymentMethod
 );
 router.delete(
   '/paymentmethods/:paymentId',
   requireAuth,
   paymentManagementRateLimit,
   sensitiveOperationsSlowDown,
-  removePaymentMethod,
+  removePaymentMethod
 );
 
 // Wishlist management routes

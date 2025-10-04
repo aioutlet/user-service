@@ -126,7 +126,7 @@ describe('User Service', () => {
       UserValidationUtility.filterAllowedFields = jest.fn().mockReturnValue({});
 
       await expect(userService.updateUser('123', { invalid: 'field' }, { isAdmin: false })).rejects.toThrow(
-        ErrorResponse,
+        ErrorResponse
       );
       await expect(userService.updateUser('123', { invalid: 'field' }, { isAdmin: false })).rejects.toMatchObject({
         message: 'No updatable fields provided',
@@ -167,23 +167,6 @@ describe('User Service', () => {
       expect(mockUser.password).toBe('newPassword123');
       expect(mockUser.save).toHaveBeenCalled();
       expect(User.findByIdAndUpdate).toHaveBeenCalledWith('123', { firstName: 'Jane' }, { new: true });
-    });
-
-    it('should prevent social account password updates for non-admin', async () => {
-      const updateFields = { password: 'newPassword123' };
-      const mockUser = {
-        _id: '123',
-        password: null, // Social account has no local password
-      };
-
-      User.findById = jest.fn().mockResolvedValue(mockUser);
-
-      await expect(userService.updateUser('123', updateFields, { isAdmin: false })).rejects.toThrow(ErrorResponse);
-      await expect(userService.updateUser('123', updateFields, { isAdmin: false })).rejects.toMatchObject({
-        message: 'Password update not allowed for social login accounts',
-        statusCode: 400,
-        code: 'NO_LOCAL_PASSWORD',
-      });
     });
 
     it('should allow admin to set password for social account', async () => {
@@ -367,94 +350,6 @@ describe('User Service', () => {
         statusCode: 404,
         code: 'USER_NOT_FOUND',
       });
-    });
-  });
-
-  describe('getUserBySocial', () => {
-    it('should return user for valid provider and id', async () => {
-      const mockUser = {
-        _id: '123',
-        email: 'test@example.com',
-        social: {
-          google: { id: 'google123' },
-        },
-      };
-
-      User.findOne = jest.fn().mockResolvedValue(mockUser);
-
-      const result = await userService.getUserBySocial('google', 'google123');
-
-      expect(User.findOne).toHaveBeenCalledWith({ 'social.google.id': 'google123' });
-      expect(result).toEqual(mockUser);
-    });
-
-    it('should throw error for missing provider', async () => {
-      await expect(userService.getUserBySocial('', 'id123')).rejects.toThrow(ErrorResponse);
-      await expect(userService.getUserBySocial('', 'id123')).rejects.toMatchObject({
-        message: 'Provider and id are required',
-        statusCode: 400,
-        code: 'PROVIDER_ID_REQUIRED',
-      });
-    });
-
-    it('should throw error for missing id', async () => {
-      await expect(userService.getUserBySocial('google', '')).rejects.toThrow(ErrorResponse);
-      await expect(userService.getUserBySocial('google', '')).rejects.toMatchObject({
-        message: 'Provider and id are required',
-        statusCode: 400,
-        code: 'PROVIDER_ID_REQUIRED',
-      });
-    });
-
-    it('should throw error for null provider', async () => {
-      await expect(userService.getUserBySocial(null, 'id123')).rejects.toThrow(ErrorResponse);
-    });
-
-    it('should throw error for null id', async () => {
-      await expect(userService.getUserBySocial('google', null)).rejects.toThrow(ErrorResponse);
-    });
-
-    it('should work with different providers', async () => {
-      const providers = ['google', 'facebook', 'twitter', 'linkedin', 'apple'];
-
-      for (const provider of providers) {
-        const mockUser = {
-          _id: '123',
-          social: { [provider]: { id: `${provider}123` } },
-        };
-
-        User.findOne = jest.fn().mockResolvedValue(mockUser);
-
-        const result = await userService.getUserBySocial(provider, `${provider}123`);
-
-        expect(User.findOne).toHaveBeenCalledWith({ [`social.${provider}.id`]: `${provider}123` });
-        expect(result).toEqual(mockUser);
-      }
-    });
-
-    it('should throw 404 when user not found', async () => {
-      User.findOne = jest.fn().mockResolvedValue(null);
-
-      await expect(userService.getUserBySocial('google', 'nonexistent')).rejects.toThrow(ErrorResponse);
-      await expect(userService.getUserBySocial('google', 'nonexistent')).rejects.toMatchObject({
-        message: 'User not found',
-        statusCode: 404,
-        code: 'USER_NOT_FOUND',
-      });
-    });
-
-    it('should handle special characters in social id', async () => {
-      const specialId = 'user-123_456.789';
-      const mockUser = {
-        _id: '123',
-        social: { google: { id: specialId } },
-      };
-
-      User.findOne = jest.fn().mockResolvedValue(mockUser);
-
-      await userService.getUserBySocial('google', specialId);
-
-      expect(User.findOne).toHaveBeenCalledWith({ 'social.google.id': specialId });
     });
   });
 });

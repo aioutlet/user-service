@@ -17,7 +17,6 @@ export const createUser = asyncHandler(async (req, res, next) => {
     displayName,
     phoneNumber,
     roles,
-    social,
     addresses,
     paymentMethods,
     wishlist,
@@ -30,11 +29,6 @@ export const createUser = asyncHandler(async (req, res, next) => {
     // Return the first error with specific code
     const firstError = validation.detailedErrors[0];
     return next(new ErrorResponse(firstError.message, 400, firstError.code));
-  }
-
-  // Set email verification for social logins
-  if (social) {
-    req.body.isEmailVerified = true;
   }
 
   // Check for valid email type to prevent NoSQL injection
@@ -58,7 +52,6 @@ export const createUser = asyncHandler(async (req, res, next) => {
       displayName,
       phoneNumber,
       roles,
-      social,
       addresses,
       paymentMethods,
       wishlist,
@@ -134,18 +127,6 @@ export const deleteUser = asyncHandler(async (req, res, next) => {
 export const findByEmail = asyncHandler(async (req, res, next) => {
   try {
     const user = await userService.getUserByEmail(req.query.email);
-    res.json(user);
-  } catch (err) {
-    next(err);
-  }
-});
-
-// @desc    Find user by social provider ID
-// @route   GET /users/findBySocial
-// @access  Private (service-to-service)
-export const findBySocial = asyncHandler(async (req, res, next) => {
-  try {
-    const user = await userService.getUserBySocial(req.query.provider, req.query.id);
     res.json(user);
   } catch (err) {
     next(err);

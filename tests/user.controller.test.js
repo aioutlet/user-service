@@ -5,7 +5,6 @@ import {
   updatePassword,
   deleteUser as deactivateAccount, // Map to available function
   findByEmail,
-  findBySocial,
   updateUserById,
   updateUserPasswordById,
 } from '../src/controllers/user.controller.js';
@@ -27,7 +26,6 @@ describe('User Controller', () => {
     User.findByIdAndDelete.mockResolvedValue(null);
     userService.getUserById.mockResolvedValue(null);
     userService.getUserByEmail.mockResolvedValue(null);
-    userService.getUserBySocial.mockResolvedValue(null);
     userService.updateUser.mockResolvedValue(null);
     userService.deleteUser.mockResolvedValue(null);
     next.mockClear();
@@ -306,16 +304,6 @@ describe('User Controller', () => {
       expect(res.statusCode).toBe(200);
       const data = typeof res._getData() === 'string' ? JSON.parse(res._getData()) : res._getData();
       expect(data).toEqual(user);
-    });
-  });
-
-  describe('findBySocial', () => {
-    it('should return 400 if provider or id is missing', async () => {
-      userService.getUserBySocial.mockRejectedValue({ status: 400, message: 'Provider and id are required' });
-      const req = httpMocks.createRequest({ query: { provider: 'google' } });
-      const res = httpMocks.createResponse();
-      await findBySocial(req, res, next);
-      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400 }));
     });
   });
 
