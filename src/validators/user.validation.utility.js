@@ -82,6 +82,20 @@ class UserValidationUtility {
       }
     }
 
+    // Phone number validation
+    if (userData.phoneNumber !== undefined) {
+      if (!userValidator.isValidPhoneNumber(userData.phoneNumber)) {
+        errors.push(
+          'Phone number must be valid (7-15 digits, can include spaces, hyphens, parentheses, and optional + prefix).'
+        );
+        detailedErrors.push({
+          message:
+            'Phone number must be valid (7-15 digits, can include spaces, hyphens, parentheses, and optional + prefix).',
+          code: 'INVALID_PHONE_NUMBER',
+        });
+      }
+    }
+
     // Roles validation
     if (userData.roles !== undefined) {
       if (!userValidator.isValidRoles(userData.roles)) {
@@ -202,33 +216,35 @@ class UserValidationUtility {
   static getAllowedUpdateFields(isAdmin = false) {
     return isAdmin
       ? [
-        'firstName',
-        'lastName',
-        'displayName',
-        'email',
-        'isEmailVerified',
-        'isActive',
-        'roles',
-        'tier',
-        'social',
-        'password',
-        'addresses',
-        'paymentMethods',
-        'wishlist',
-        'preferences',
-      ]
+          'firstName',
+          'lastName',
+          'displayName',
+          'phoneNumber',
+          'email',
+          'isEmailVerified',
+          'isActive',
+          'roles',
+          'tier',
+          'social',
+          'password',
+          'addresses',
+          'paymentMethods',
+          'wishlist',
+          'preferences',
+        ]
       : [
-        'firstName',
-        'lastName',
-        'displayName',
-        'isActive',
-        'isEmailVerified',
-        'password',
-        'addresses',
-        'paymentMethods',
-        'wishlist',
-        'preferences',
-      ];
+          'firstName',
+          'lastName',
+          'displayName',
+          'phoneNumber',
+          'isActive',
+          'isEmailVerified',
+          'password',
+          'addresses',
+          'paymentMethods',
+          'wishlist',
+          'preferences',
+        ];
   }
 
   /**

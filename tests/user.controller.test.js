@@ -89,6 +89,113 @@ describe('User Controller', () => {
       await createUser(req, res, next);
       expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400, code: 'INVALID_ROLES' }));
     });
+
+    it('should return 400 if phoneNumber is invalid (too short)', async () => {
+      const req = httpMocks.createRequest({
+        body: { email: 'test@example.com', password: 'Password123', firstName: 'John', phoneNumber: '123' },
+      });
+      const res = httpMocks.createResponse();
+      await createUser(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400, code: 'INVALID_PHONE_NUMBER' }));
+    });
+
+    it('should return 400 if phoneNumber is invalid (contains invalid characters)', async () => {
+      const req = httpMocks.createRequest({
+        body: { email: 'test@example.com', password: 'Password123', firstName: 'John', phoneNumber: '123-abc-7890' },
+      });
+      const res = httpMocks.createResponse();
+      await createUser(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400, code: 'INVALID_PHONE_NUMBER' }));
+    });
+
+    it('should return 400 if phoneNumber is invalid (too long)', async () => {
+      const req = httpMocks.createRequest({
+        body: {
+          email: 'test@example.com',
+          password: 'Password123',
+          firstName: 'John',
+          phoneNumber: '+1234567890123456789012345',
+        },
+      });
+      const res = httpMocks.createResponse();
+      await createUser(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400, code: 'INVALID_PHONE_NUMBER' }));
+    });
+
+    it('should accept valid phoneNumber with international format', async () => {
+      const req = httpMocks.createRequest({
+        body: {
+          email: 'test@example.com',
+          password: 'Password123',
+          firstName: 'John',
+          lastName: 'Doe',
+          phoneNumber: '+447440292520',
+        },
+      });
+      const res = httpMocks.createResponse();
+      await createUser(req, res, next);
+      // Should not call next with validation error
+      if (next.mock.calls.length > 0) {
+        const error = next.mock.calls[0][0];
+        expect(error.code).not.toBe('INVALID_PHONE_NUMBER');
+      }
+    });
+
+    it('should accept valid phoneNumber with US format', async () => {
+      const req = httpMocks.createRequest({
+        body: {
+          email: 'test@example.com',
+          password: 'Password123',
+          firstName: 'John',
+          lastName: 'Doe',
+          phoneNumber: '(123) 456-7890',
+        },
+      });
+      const res = httpMocks.createResponse();
+      await createUser(req, res, next);
+      // Should not call next with validation error
+      if (next.mock.calls.length > 0) {
+        const error = next.mock.calls[0][0];
+        expect(error.code).not.toBe('INVALID_PHONE_NUMBER');
+      }
+    });
+
+    it('should accept valid phoneNumber with hyphens', async () => {
+      const req = httpMocks.createRequest({
+        body: {
+          email: 'test@example.com',
+          password: 'Password123',
+          firstName: 'John',
+          lastName: 'Doe',
+          phoneNumber: '123-456-7890',
+        },
+      });
+      const res = httpMocks.createResponse();
+      await createUser(req, res, next);
+      // Should not call next with validation error
+      if (next.mock.calls.length > 0) {
+        const error = next.mock.calls[0][0];
+        expect(error.code).not.toBe('INVALID_PHONE_NUMBER');
+      }
+    });
+
+    it('should create user without phoneNumber (optional field)', async () => {
+      const req = httpMocks.createRequest({
+        body: {
+          email: 'test@example.com',
+          password: 'Password123',
+          firstName: 'John',
+          lastName: 'Doe',
+        },
+      });
+      const res = httpMocks.createResponse();
+      await createUser(req, res, next);
+      // Should not call next with validation error (phoneNumber is optional)
+      if (next.mock.calls.length > 0) {
+        const error = next.mock.calls[0][0];
+        expect(error.code).not.toBe('INVALID_PHONE_NUMBER');
+      }
+    });
   });
 
   describe('getUserById', () => {
