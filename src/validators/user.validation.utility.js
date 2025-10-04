@@ -3,7 +3,6 @@ import userValidator from './user.validator.js';
 import userAddressValidator from './user.address.validator.js';
 import userPaymentValidator from './user.payment.validator.js';
 import userWishlistValidator from './user.wishlist.validator.js';
-import userSocialValidator from './user.social.validator.js';
 
 /**
  * Comprehensive validation utility for user data
@@ -35,7 +34,7 @@ class UserValidationUtility {
     }
 
     // Password validation
-    if (requirePassword || (isCreate && !userData.social)) {
+    if (requirePassword || isCreate) {
       if (!userData.password) {
         errors.push('Password is required');
         detailedErrors.push({ message: 'Password is required', code: 'PASSWORD_REQUIRED' });
@@ -86,7 +85,7 @@ class UserValidationUtility {
     if (userData.phoneNumber !== undefined) {
       if (!userValidator.isValidPhoneNumber(userData.phoneNumber)) {
         errors.push(
-          'Phone number must be valid (7-15 digits, can include spaces, hyphens, parentheses, and optional + prefix).',
+          'Phone number must be valid (7-15 digits, can include spaces, hyphens, parentheses, and optional + prefix).'
         );
         detailedErrors.push({
           message:
@@ -141,14 +140,6 @@ class UserValidationUtility {
       }
     }
 
-    // Social accounts validation
-    if (userData.social !== undefined) {
-      const socialValidation = userSocialValidator.validateSocialAccounts(userData.social);
-      if (!socialValidation.valid) {
-        errors.push(...socialValidation.errors);
-      }
-    }
-
     return {
       valid: errors.length === 0,
       errors,
@@ -166,7 +157,7 @@ class UserValidationUtility {
     return this.validateUserData(userData, {
       ...options,
       isCreate: true,
-      requirePassword: !userData.social, // Require password if not social login
+      requirePassword: true, // Password always required for create
     });
   }
 
@@ -216,35 +207,34 @@ class UserValidationUtility {
   static getAllowedUpdateFields(isAdmin = false) {
     return isAdmin
       ? [
-        'firstName',
-        'lastName',
-        'displayName',
-        'phoneNumber',
-        'email',
-        'isEmailVerified',
-        'isActive',
-        'roles',
-        'tier',
-        'social',
-        'password',
-        'addresses',
-        'paymentMethods',
-        'wishlist',
-        'preferences',
-      ]
+          'firstName',
+          'lastName',
+          'displayName',
+          'phoneNumber',
+          'email',
+          'isEmailVerified',
+          'isActive',
+          'roles',
+          'tier',
+          'password',
+          'addresses',
+          'paymentMethods',
+          'wishlist',
+          'preferences',
+        ]
       : [
-        'firstName',
-        'lastName',
-        'displayName',
-        'phoneNumber',
-        'isActive',
-        'isEmailVerified',
-        'password',
-        'addresses',
-        'paymentMethods',
-        'wishlist',
-        'preferences',
-      ];
+          'firstName',
+          'lastName',
+          'displayName',
+          'phoneNumber',
+          'isActive',
+          'isEmailVerified',
+          'password',
+          'addresses',
+          'paymentMethods',
+          'wishlist',
+          'preferences',
+        ];
   }
 
   /**

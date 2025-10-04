@@ -3,14 +3,12 @@ import userValidator from '../src/validators/user.validator.js';
 import userAddressValidator from '../src/validators/user.address.validator.js';
 import userPaymentValidator from '../src/validators/user.payment.validator.js';
 import userWishlistValidator from '../src/validators/user.wishlist.validator.js';
-import userSocialValidator from '../src/validators/user.social.validator.js';
 import ErrorResponse from '../src/utils/ErrorResponse.js';
 
 jest.mock('../src/validators/user.validator.js');
 jest.mock('../src/validators/user.address.validator.js');
 jest.mock('../src/validators/user.payment.validator.js');
 jest.mock('../src/validators/user.wishlist.validator.js');
-jest.mock('../src/validators/user.social.validator.js');
 
 describe('UserValidationUtility', () => {
   beforeEach(() => {
@@ -27,7 +25,6 @@ describe('UserValidationUtility', () => {
     userAddressValidator.validateAddress = jest.fn().mockReturnValue({ valid: true, errors: [] });
     userPaymentValidator.validatePaymentMethod = jest.fn().mockReturnValue({ valid: true, errors: [] });
     userWishlistValidator.validateWishlistArray = jest.fn().mockReturnValue({ valid: true, errors: [] });
-    userSocialValidator.validateSocialAccounts = jest.fn().mockReturnValue({ valid: true, errors: [] });
   });
 
   describe('validateUserData', () => {
@@ -146,19 +143,6 @@ describe('UserValidationUtility', () => {
       expect(userWishlistValidator.validateWishlistArray).toHaveBeenCalledWith(userData.wishlist);
     });
 
-    it('should validate social accounts when present', () => {
-      const userData = {
-        email: 'test@example.com',
-        social: {
-          google: { id: 'google123', email: 'test@gmail.com' },
-        },
-      };
-
-      UserValidationUtility.validateUserData(userData);
-
-      expect(userSocialValidator.validateSocialAccounts).toHaveBeenCalledWith(userData.social);
-    });
-
     it('should skip validation for empty arrays', () => {
       const userData = {
         email: 'test@example.com',
@@ -195,20 +179,6 @@ describe('UserValidationUtility', () => {
 
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Password is required');
-    });
-
-    it('should not require password for create with social', () => {
-      const userData = {
-        email: 'test@example.com',
-        firstName: 'John',
-        social: {
-          google: { id: 'google123' },
-        },
-      };
-
-      const result = UserValidationUtility.validateUserData(userData, { isCreate: true });
-
-      expect(result.valid).toBe(true);
     });
 
     it('should require email for create operations', () => {
@@ -488,21 +458,7 @@ describe('UserValidationUtility', () => {
       expect(result.valid).toBe(true);
     });
 
-    it('should accept social login for create without password', () => {
-      const userData = {
-        email: 'test@example.com',
-        firstName: 'John',
-        social: {
-          google: { id: 'google123', email: 'test@gmail.com' },
-        },
-      };
-
-      const result = UserValidationUtility.validateForCreate(userData);
-
-      expect(result.valid).toBe(true);
-    });
-
-    it('should require password when email is provided without social', () => {
+    it('should require password when email is provided', () => {
       const userData = {
         email: 'test@example.com',
         firstName: 'John',
