@@ -55,7 +55,7 @@ describe('Social Validator', () => {
     });
 
     it('should reject emails longer than 100 characters', () => {
-      const longEmail = 'a'.repeat(90) + '@domain.com'; // >100 chars
+      const longEmail = `${'a'.repeat(90)}@domain.com`; // >100 chars
       expect(userSocialValidator.isValidSocialEmail(longEmail)).toBe(false);
     });
   });
@@ -224,7 +224,7 @@ describe('Social Validator', () => {
       const result = userSocialValidator.validateTwitterAccount(invalid);
       expect(result.valid).toBe(false);
       expect(result.errors).toContain(
-        'Twitter username must contain only letters, numbers, underscores, hyphens, and periods'
+        'Twitter username must contain only letters, numbers, underscores, hyphens, and periods',
       );
     });
   });

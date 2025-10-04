@@ -126,7 +126,7 @@ describe('User Service', () => {
       UserValidationUtility.filterAllowedFields = jest.fn().mockReturnValue({});
 
       await expect(userService.updateUser('123', { invalid: 'field' }, { isAdmin: false })).rejects.toThrow(
-        ErrorResponse
+        ErrorResponse,
       );
       await expect(userService.updateUser('123', { invalid: 'field' }, { isAdmin: false })).rejects.toMatchObject({
         message: 'No updatable fields provided',
@@ -161,7 +161,7 @@ describe('User Service', () => {
       User.findById = jest.fn().mockResolvedValue(mockUser);
       User.findByIdAndUpdate = jest.fn().mockResolvedValue({ _id: '123', firstName: 'Jane' });
 
-      const result = await userService.updateUser('123', updateFields, { isAdmin: false });
+      await userService.updateUser('123', updateFields, { isAdmin: false });
 
       expect(User.findById).toHaveBeenCalledWith('123');
       expect(mockUser.password).toBe('newPassword123');

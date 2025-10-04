@@ -126,7 +126,7 @@ describe('Payment Validator', () => {
   describe('isValidCardholderName', () => {
     it('should accept valid cardholder names', () => {
       expect(userPaymentValidator.isValidCardholderName('John Doe')).toBe(true);
-      expect(userPaymentValidator.isValidCardholderName("Mary O'Brien")).toBe(true);
+      expect(userPaymentValidator.isValidCardholderName('Mary O\'Brien')).toBe(true);
       expect(userPaymentValidator.isValidCardholderName('Jean-Pierre Martin')).toBe(true);
       expect(userPaymentValidator.isValidCardholderName('Dr. Smith Jr.')).toBe(true);
     });

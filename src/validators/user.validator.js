@@ -96,7 +96,7 @@ const userValidator = {
       Array.isArray(roles) &&
       roles.length > 0 &&
       roles.every(
-        (role) => typeof role === 'string' && role.trim().length > 0 && validRoles.includes(role.trim().toLowerCase())
+        (role) => typeof role === 'string' && role.trim().length > 0 && validRoles.includes(role.trim().toLowerCase()),
       )
     );
   },

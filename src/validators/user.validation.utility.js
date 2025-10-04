@@ -86,7 +86,7 @@ class UserValidationUtility {
     if (userData.phoneNumber !== undefined) {
       if (!userValidator.isValidPhoneNumber(userData.phoneNumber)) {
         errors.push(
-          'Phone number must be valid (7-15 digits, can include spaces, hyphens, parentheses, and optional + prefix).'
+          'Phone number must be valid (7-15 digits, can include spaces, hyphens, parentheses, and optional + prefix).',
         );
         detailedErrors.push({
           message:
@@ -216,35 +216,35 @@ class UserValidationUtility {
   static getAllowedUpdateFields(isAdmin = false) {
     return isAdmin
       ? [
-          'firstName',
-          'lastName',
-          'displayName',
-          'phoneNumber',
-          'email',
-          'isEmailVerified',
-          'isActive',
-          'roles',
-          'tier',
-          'social',
-          'password',
-          'addresses',
-          'paymentMethods',
-          'wishlist',
-          'preferences',
-        ]
+        'firstName',
+        'lastName',
+        'displayName',
+        'phoneNumber',
+        'email',
+        'isEmailVerified',
+        'isActive',
+        'roles',
+        'tier',
+        'social',
+        'password',
+        'addresses',
+        'paymentMethods',
+        'wishlist',
+        'preferences',
+      ]
       : [
-          'firstName',
-          'lastName',
-          'displayName',
-          'phoneNumber',
-          'isActive',
-          'isEmailVerified',
-          'password',
-          'addresses',
-          'paymentMethods',
-          'wishlist',
-          'preferences',
-        ];
+        'firstName',
+        'lastName',
+        'displayName',
+        'phoneNumber',
+        'isActive',
+        'isEmailVerified',
+        'password',
+        'addresses',
+        'paymentMethods',
+        'wishlist',
+        'preferences',
+      ];
   }
 
   /**

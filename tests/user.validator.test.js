@@ -90,7 +90,7 @@ describe('User Validator', () => {
     });
 
     it('should return false if too long', () => {
-      const longEmail = 'a'.repeat(100) + '@example.com';
+      const longEmail = `${'a'.repeat(100)}@example.com`;
       expect(userValidator.isValidEmail(longEmail)).toBe(false);
     });
   });
@@ -108,7 +108,7 @@ describe('User Validator', () => {
     });
 
     it('should return valid:false if too long', () => {
-      const result = userValidator.isValidPassword('P'.repeat(26) + '1');
+      const result = userValidator.isValidPassword(`${'P'.repeat(26)}1`);
       expect(result.valid).toBe(false);
       expect(result.error).toContain('25');
     });
@@ -135,7 +135,7 @@ describe('User Validator', () => {
   describe('isValidFirstName', () => {
     it('should return true for valid first name', () => {
       expect(userValidator.isValidFirstName('John')).toBe(true);
-      expect(userValidator.isValidFirstName("O'Brien")).toBe(true);
+      expect(userValidator.isValidFirstName('O\'Brien')).toBe(true);
       expect(userValidator.isValidFirstName('Mary-Jane')).toBe(true);
     });
 
@@ -157,7 +157,7 @@ describe('User Validator', () => {
   describe('isValidLastName', () => {
     it('should return true for valid last name', () => {
       expect(userValidator.isValidLastName('Smith')).toBe(true);
-      expect(userValidator.isValidLastName("O'Connor")).toBe(true);
+      expect(userValidator.isValidLastName('O\'Connor')).toBe(true);
     });
 
     it('should return true for empty/undefined (optional)', () => {

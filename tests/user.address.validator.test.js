@@ -92,7 +92,7 @@ describe('Address Validator', () => {
     it('should accept valid city names', () => {
       expect(userAddressValidator.isValidCity('New York')).toBe(true);
       expect(userAddressValidator.isValidCity('San Francisco')).toBe(true);
-      expect(userAddressValidator.isValidCity("St. Paul's")).toBe(true);
+      expect(userAddressValidator.isValidCity('St. Paul\'s')).toBe(true);
       expect(userAddressValidator.isValidCity('Los Angeles-Beach')).toBe(true);
     });
 
@@ -131,7 +131,7 @@ describe('Address Validator', () => {
     });
 
     it('should accept state with hyphens and apostrophes', () => {
-      expect(userAddressValidator.isValidState("O'Brien")).toBe(true);
+      expect(userAddressValidator.isValidState('O\'Brien')).toBe(true);
       expect(userAddressValidator.isValidState('North-South')).toBe(true);
       expect(userAddressValidator.isValidState('St. Louis')).toBe(true);
     });
@@ -194,7 +194,7 @@ describe('Address Validator', () => {
     });
 
     it('should accept country with hyphens and apostrophes', () => {
-      expect(userAddressValidator.isValidCountry("Cote d'Ivoire")).toBe(true);
+      expect(userAddressValidator.isValidCountry('Cote d\'Ivoire')).toBe(true);
       expect(userAddressValidator.isValidCountry('Guinea-Bissau')).toBe(true);
     });
 
@@ -340,7 +340,7 @@ describe('Address Validator', () => {
 
       expect(result.valid).toBe(false);
       expect(result.errors).toContain(
-        'City is required and must contain only letters, spaces, hyphens, apostrophes, and periods'
+        'City is required and must contain only letters, spaces, hyphens, apostrophes, and periods',
       );
     });
 
@@ -358,7 +358,7 @@ describe('Address Validator', () => {
 
       expect(result.valid).toBe(false);
       expect(result.errors).toContain(
-        'State is required and must contain only letters, spaces, hyphens, apostrophes, and periods'
+        'State is required and must contain only letters, spaces, hyphens, apostrophes, and periods',
       );
     });
 
@@ -376,7 +376,7 @@ describe('Address Validator', () => {
 
       expect(result.valid).toBe(false);
       expect(result.errors).toContain(
-        'Zip code is required and must contain only alphanumeric characters, spaces, and hyphens'
+        'Zip code is required and must contain only alphanumeric characters, spaces, and hyphens',
       );
     });
 
@@ -394,7 +394,7 @@ describe('Address Validator', () => {
 
       expect(result.valid).toBe(false);
       expect(result.errors).toContain(
-        'Country is required and must contain only letters, spaces, hyphens, apostrophes, and periods'
+        'Country is required and must contain only letters, spaces, hyphens, apostrophes, and periods',
       );
     });
 
@@ -413,7 +413,7 @@ describe('Address Validator', () => {
 
       expect(result.valid).toBe(false);
       expect(result.errors).toContain(
-        'Phone number must contain only numbers, spaces, hyphens, parentheses, periods, and plus sign'
+        'Phone number must contain only numbers, spaces, hyphens, parentheses, periods, and plus sign',
       );
     });
 

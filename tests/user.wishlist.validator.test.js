@@ -298,7 +298,7 @@ describe('Wishlist Validator', () => {
       const result = userWishlistValidator.validateWishlistItem(invalid);
       expect(result.valid).toBe(false);
       expect(result.errors[0]).toContain(
-        'Product category must contain only letters, numbers, spaces, hyphens, and ampersands'
+        'Product category must contain only letters, numbers, spaces, hyphens, and ampersands',
       );
     });
 
