@@ -1,4 +1,4 @@
-import userAddressValidator from '../src/validators/user.address.validator.js';
+import userAddressValidator from '../../src/validators/user.address.validator.js';
 
 describe('Address Validator', () => {
   describe('isValidAddressType', () => {

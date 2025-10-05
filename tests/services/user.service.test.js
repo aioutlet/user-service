@@ -1,12 +1,12 @@
-import * as userService from '../src/services/user.service.js';
-import User from '../src/models/user.model.js';
-import UserValidationUtility from '../src/validators/user.validation.utility.js';
-import userValidator from '../src/validators/user.validator.js';
-import ErrorResponse from '../src/utils/ErrorResponse.js';
+import * as userService from '../../src/services/user.service.js';
+import User from '../../src/models/user.model.js';
+import UserValidationUtility from '../../src/validators/user.validation.utility.js';
+import userValidator from '../../src/validators/user.validator.js';
+import ErrorResponse from '../../src/utils/ErrorResponse.js';
 
-jest.mock('../src/models/user.model.js');
-jest.mock('../src/validators/user.validation.utility.js');
-jest.mock('../src/validators/user.validator.js');
+jest.mock('../../src/models/user.model.js');
+jest.mock('../../src/validators/user.validation.utility.js');
+jest.mock('../../src/validators/user.validator.js');
 
 describe('User Service', () => {
   beforeEach(() => {

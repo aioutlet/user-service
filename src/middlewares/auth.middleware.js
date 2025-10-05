@@ -1,5 +1,4 @@
 import jwt from 'jsonwebtoken';
-import config from '../config/index.js';
 import User from '../models/user.model.js';
 import logger from '../observability/index.js';
 import ErrorResponse from '../utils/ErrorResponse.js';
@@ -23,7 +22,7 @@ export function requireAuth(req, res, next) {
     return next(new ErrorResponse('Unauthorized: No token found in Authorization header or cookies', 401));
   }
   try {
-    const decoded = jwt.verify(token, config.jwt.secret);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = {
       _id: decoded.id,
       email: decoded.email,

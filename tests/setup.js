@@ -4,11 +4,12 @@
  */
 import dotenv from 'dotenv';
 
-// Set test environment
-process.env.NODE_ENV = 'test';
+// Load environment variables from .env file
+// This ensures tests validate the actual .env configuration
+dotenv.config();
 
-// Load test environment variables
-dotenv.config({ path: '.env.test' });
+// Only override NODE_ENV to ensure we're in test mode
+process.env.NODE_ENV = 'test';
 
 // Mock console.log and console.error to reduce noise in tests
 global.console = {

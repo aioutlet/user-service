@@ -7,13 +7,13 @@ import {
   findByEmail,
   updateUserById,
   updateUserPasswordById,
-} from '../src/controllers/user.controller.js';
-import User from '../src/models/user.model.js';
-import * as userService from '../src/services/user.service.js';
+} from '../../src/controllers/user.controller.js';
+import User from '../../src/models/user.model.js';
+import * as userService from '../../src/services/user.service.js';
 import httpMocks from 'node-mocks-http';
 
-jest.mock('../src/models/user.model.js');
-jest.mock('../src/services/user.service.js');
+jest.mock('../../src/models/user.model.js');
+jest.mock('../../src/services/user.service.js');
 
 const next = jest.fn();
 

@@ -1,4 +1,4 @@
-import userWishlistValidator from '../src/validators/user.wishlist.validator.js';
+import userWishlistValidator from '../../src/validators/user.wishlist.validator.js';
 
 describe('Wishlist Validator', () => {
   describe('isValidProductId', () => {

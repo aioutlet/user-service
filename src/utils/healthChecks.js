@@ -4,7 +4,6 @@
  */
 
 import mongoose from 'mongoose';
-import config from '../config/index.js';
 import logger from '../observability/index.js';
 
 /**
@@ -159,8 +158,8 @@ export const performReadinessCheck = async () => {
 
     // Check external services
     const externalServices = [
-      { name: 'audit', url: config.services.audit },
-      { name: 'notification', url: config.services.notification },
+      { name: 'audit', url: process.env.AUDIT_SERVICE_URL || 'http://localhost:3007' },
+      { name: 'notification', url: process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3003' },
     ];
 
     for (const service of externalServices) {

@@ -2,8 +2,6 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 
-import config from './config/index.js';
-import { validateConfig } from './validators/config.validator.js';
 import connectDB from './database/connection.js';
 import adminRoutes from './routes/admin.routes.js';
 import homeRoutes from './routes/home.routes.js';
@@ -17,20 +15,16 @@ const { generalRateLimit } = rateLimitMiddleware;
 
 const app = express();
 
-// Validate configuration before starting the app
-try {
-  validateConfig(config);
-} catch (error) {
-  console.error('❌ Configuration Error:', error.message);
-  process.exit(1);
-}
-
 // Apply CORS before other middlewares
+const corsOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim())
+  : ['http://localhost:3000'];
+
 app.use(
   cors({
-    origin: config.security.corsOrigin,
+    origin: corsOrigins,
     credentials: true,
-  }),
+  })
 );
 
 app.use(correlationIdMiddleware); // Add correlation ID middleware first
@@ -68,10 +62,13 @@ app.use((err, req, res, _next) => {
   });
 });
 
-app.listen(config.server.port, config.server.host, () => {
-  logger.info(`User service running on ${config.server.host}:${config.server.port}`);
-  logger.info(`Environment: ${config.env}`);
-  logger.info(`Database: ${config.database.uri.replace(/\/\/[^@]*@/, '//***:***@')}`); // Hide credentials
+const PORT = parseInt(process.env.PORT, 10) || 3002;
+const HOST = process.env.HOST || '0.0.0.0';
+
+app.listen(PORT, HOST, () => {
+  logger.info(`User service running on ${HOST}:${PORT}`);
+  logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  logger.info(`Database: ${process.env.MONGODB_URI.replace(/\/\/[^@]*@/, '//***:***@')}`); // Hide credentials
 });
 
 // Graceful shutdown

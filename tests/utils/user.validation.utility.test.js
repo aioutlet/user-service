@@ -1,14 +1,14 @@
-import UserValidationUtility from '../src/validators/user.validation.utility.js';
-import userValidator from '../src/validators/user.validator.js';
-import userAddressValidator from '../src/validators/user.address.validator.js';
-import userPaymentValidator from '../src/validators/user.payment.validator.js';
-import userWishlistValidator from '../src/validators/user.wishlist.validator.js';
-import ErrorResponse from '../src/utils/ErrorResponse.js';
+import UserValidationUtility from '../../src/validators/user.validation.utility.js';
+import userValidator from '../../src/validators/user.validator.js';
+import userAddressValidator from '../../src/validators/user.address.validator.js';
+import userPaymentValidator from '../../src/validators/user.payment.validator.js';
+import userWishlistValidator from '../../src/validators/user.wishlist.validator.js';
+import ErrorResponse from '../../src/utils/ErrorResponse.js';
 
-jest.mock('../src/validators/user.validator.js');
-jest.mock('../src/validators/user.address.validator.js');
-jest.mock('../src/validators/user.payment.validator.js');
-jest.mock('../src/validators/user.wishlist.validator.js');
+jest.mock('../../src/validators/user.validator.js');
+jest.mock('../../src/validators/user.address.validator.js');
+jest.mock('../../src/validators/user.payment.validator.js');
+jest.mock('../../src/validators/user.wishlist.validator.js');
 
 describe('UserValidationUtility', () => {
   beforeEach(() => {

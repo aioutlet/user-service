@@ -1,4 +1,4 @@
-import userValidator from '../src/validators/user.validator.js';
+import userValidator from '../../src/validators/user.validator.js';
 
 describe('User Validator', () => {
   describe('isValidPhoneNumber', () => {

@@ -27,14 +27,11 @@
     "db:seed": "node database/scripts/seed.js",
     "db:clear": "node database/scripts/clear.js",
     "db:reset": "npm run db:clear && npm run db:seed",
-    "db:seed:test": "NODE_ENV=test node database/scripts/seed.js",
-    "db:status": "node database/scripts/status.js",
     "test": "jest --runInBand",
     "test:watch": "jest --runInBand --watch",
     "test:coverage": "jest --runInBand --coverage",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "validate": "node -r dotenv/config -e \"import('./src/config/index.js').then(() => console.log('✅ Configuration valid'))\""
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@opentelemetry/api": "^1.9.0",

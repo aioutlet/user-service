@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import logger from '../observability/index.js';
-import config from '../config/index.js';
 
 const connectDB = async () => {
   try {
@@ -8,7 +7,11 @@ const connectDB = async () => {
     mongoose.Promise = global.Promise;
 
     // Connect to MongoDB using the configuration
-    const conn = await mongoose.connect(config.database.uri, config.database.options);
+    const conn = await mongoose.connect(process.env.MONGODB_URI, {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
 
     logger.info(`MongoDB connected: ${conn.connection.host}:${conn.connection.port}/${conn.connection.name}`);
 
