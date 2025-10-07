@@ -1,6 +1,6 @@
 import asyncHandler from '../middlewares/asyncHandler.js';
 import ErrorResponse from '../utils/ErrorResponse.js';
-import UserValidationUtility from '../validators/user.validation.utility.js';
+import userAddressValidator from '../validators/user.address.validator.js';
 import User from '../models/user.model.js';
 import logger from '../observability/index.js';
 
@@ -39,8 +39,8 @@ export const getAddresses = asyncHandler(async (req, res, next) => {
 export const addAddress = asyncHandler(async (req, res, next) => {
   const addressData = req.body;
 
-  // Validate the address data
-  const validation = UserValidationUtility.validateUserData({ addresses: [addressData] });
+  // Validate the address data directly using address validator
+  const validation = userAddressValidator.validateAddress(addressData);
   if (!validation.valid) {
     return next(new ErrorResponse(validation.errors.join('; '), 400, 'INVALID_ADDRESS'));
   }
@@ -87,8 +87,8 @@ export const updateAddress = asyncHandler(async (req, res, next) => {
     // Merge existing address with incoming data for validation
     const mergedAddress = { ...address.toObject(), ...addressData };
 
-    // Validate the complete merged address
-    const validation = UserValidationUtility.validateUserData({ addresses: [mergedAddress] });
+    // Validate the complete merged address using address validator
+    const validation = userAddressValidator.validateAddress(mergedAddress);
     if (!validation.valid) {
       return next(new ErrorResponse(validation.errors.join('; '), 400, 'INVALID_ADDRESS'));
     }

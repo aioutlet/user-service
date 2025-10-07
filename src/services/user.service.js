@@ -1,5 +1,4 @@
 import User from '../models/user.model.js';
-import UserValidationUtility from '../validators/user.validation.utility.js';
 import userValidator from '../validators/user.validator.js';
 import ErrorResponse from '../utils/ErrorResponse.js';
 
@@ -12,19 +11,104 @@ export async function getUserById(userId) {
 }
 
 export async function updateUser(userId, updateFields, { isAdmin = false } = {}) {
+  // Define allowed fields based on user role
+  const allowedFields = isAdmin
+    ? [
+        'firstName',
+        'lastName',
+        'displayName',
+        'phoneNumber',
+        'email',
+        'isEmailVerified',
+        'isActive',
+        'roles',
+        'tier',
+        'password',
+        'preferences',
+      ]
+    : ['firstName', 'lastName', 'displayName', 'phoneNumber', 'isActive', 'isEmailVerified', 'password', 'preferences'];
+
   // Filter to only allowed fields
-  const update = UserValidationUtility.filterAllowedFields(updateFields, isAdmin);
+  const update = {};
+  for (const field of allowedFields) {
+    if (field in updateFields) {
+      update[field] = updateFields[field];
+    }
+  }
 
   if (Object.keys(update).length === 0) {
     throw new ErrorResponse('No updatable fields provided', 400, 'NO_UPDATABLE_FIELDS');
   }
 
-  // Validate the update data
-  const validation = UserValidationUtility.validateForUpdate(update, { isAdmin });
-  UserValidationUtility.throwIfInvalid(validation, 'UPDATE_VALIDATION_ERROR');
+  // Validate fields that are being updated
+  if ('email' in update) {
+    if (!userValidator.isValidEmail(update.email)) {
+      throw new ErrorResponse('Email is required, must be valid, 5-100 chars.', 400, 'INVALID_EMAIL');
+    }
+  }
 
-  // Handle password update separately (requires special logic)
+  if ('firstName' in update) {
+    if (!userValidator.isValidFirstName(update.firstName)) {
+      throw new ErrorResponse(
+        'First name must contain only letters, spaces, hyphens, apostrophes, and periods (max 50 chars).',
+        400,
+        'INVALID_NAME'
+      );
+    }
+  }
+
+  if ('lastName' in update) {
+    if (!userValidator.isValidLastName(update.lastName)) {
+      throw new ErrorResponse(
+        'Last name must contain only letters, spaces, hyphens, apostrophes, and periods (max 50 chars).',
+        400,
+        'INVALID_NAME'
+      );
+    }
+  }
+
+  if ('displayName' in update) {
+    if (!userValidator.isValidDisplayName(update.displayName)) {
+      throw new ErrorResponse('Display name must be less than 100 characters.', 400, 'INVALID_NAME');
+    }
+  }
+
+  if ('phoneNumber' in update) {
+    if (!userValidator.isValidPhoneNumber(update.phoneNumber)) {
+      throw new ErrorResponse(
+        'Phone number must be valid (7-15 digits, can include spaces, hyphens, parentheses, and optional + prefix).',
+        400,
+        'INVALID_PHONE_NUMBER'
+      );
+    }
+  }
+
+  if ('roles' in update) {
+    if (!userValidator.isValidRoles(update.roles)) {
+      throw new ErrorResponse('Roles must be an array of valid role strings.', 400, 'INVALID_ROLES');
+    }
+  }
+
+  if ('tier' in update) {
+    if (!isAdmin) {
+      throw new ErrorResponse('Tier can only be modified by administrators.', 403, 'FORBIDDEN');
+    }
+    if (!userValidator.isValidTier(update.tier)) {
+      throw new ErrorResponse(
+        'Tier must be a valid tier string (basic, premium, gold, platinum).',
+        400,
+        'INVALID_TIER'
+      );
+    }
+  }
+
   if ('password' in update) {
+    const passwordValidation = userValidator.isValidPassword(update.password);
+    if (!passwordValidation || !passwordValidation.valid) {
+      throw new ErrorResponse(passwordValidation?.error || 'Invalid password', 400, 'INVALID_PASSWORD');
+    }
+
+    // Handle password update separately (requires special logic)
     const user = await User.findById(userId);
     if (!user) {
       throw new ErrorResponse('User not found', 404, 'USER_NOT_FOUND');

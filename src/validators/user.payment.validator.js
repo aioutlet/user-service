@@ -62,12 +62,15 @@ const userPaymentValidator = {
     // Normalize payment data from frontend
     const normalizedPayment = { ...payment };
 
-    // Extract last4 from cardNumber if present
+    // Extract last4 from cardNumber if present (when adding/editing payment)
+    // If last4 is already present (from database), use it
     if (payment.cardNumber && !payment.last4) {
       const cleanCardNumber = payment.cardNumber.replace(/\s/g, '');
       if (cleanCardNumber.length >= 4) {
         normalizedPayment.last4 = cleanCardNumber.slice(-4);
       }
+      // Remove cardNumber from normalized payment (should not be stored)
+      delete normalizedPayment.cardNumber;
     }
 
     // Convert expiryMonth from string to number if needed

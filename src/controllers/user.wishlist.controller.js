@@ -1,6 +1,6 @@
 import asyncHandler from '../middlewares/asyncHandler.js';
 import ErrorResponse from '../utils/ErrorResponse.js';
-import UserValidationUtility from '../validators/user.validation.utility.js';
+import userWishlistValidator from '../validators/user.wishlist.validator.js';
 import User from '../models/user.model.js';
 import logger from '../observability/index.js';
 
@@ -39,8 +39,8 @@ export const getWishlist = asyncHandler(async (req, res, next) => {
 export const addToWishlist = asyncHandler(async (req, res, next) => {
   const wishlistData = req.body;
 
-  // Validate the wishlist data
-  const validation = UserValidationUtility.validateUserData({ wishlist: [wishlistData] });
+  // Validate the wishlist data directly using wishlist validator
+  const validation = userWishlistValidator.validateWishlistItem(wishlistData);
   if (!validation.valid) {
     return next(new ErrorResponse(validation.errors.join('; '), 400, 'INVALID_WISHLIST_ITEM'));
   }
@@ -93,8 +93,8 @@ export const updateWishlistItem = asyncHandler(async (req, res, next) => {
     // Merge existing wishlist item with incoming data for validation
     const mergedWishlistItem = { ...wishlistItem.toObject(), ...wishlistData };
 
-    // Validate the complete merged wishlist item
-    const validation = UserValidationUtility.validateUserData({ wishlist: [mergedWishlistItem] });
+    // Validate the complete merged wishlist item using wishlist validator
+    const validation = userWishlistValidator.validateWishlistItem(mergedWishlistItem);
     if (!validation.valid) {
       return next(new ErrorResponse(validation.errors.join('; '), 400, 'INVALID_WISHLIST_ITEM'));
     }

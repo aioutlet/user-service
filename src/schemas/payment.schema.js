@@ -16,12 +16,28 @@ const paymentSchema = new mongoose.Schema(
     },
     expiryMonth: {
       type: Number,
+      required: true,
       min: [1, 'Expiry month must be between 1 and 12'],
       max: [12, 'Expiry month must be between 1 and 12'],
     },
     expiryYear: {
       type: Number,
-      min: [new Date().getFullYear(), 'Expiry year cannot be in the past'],
+      required: true,
+      validate: {
+        validator: function (value) {
+          // Dynamic validation - checks current year at runtime, not at schema definition time
+          const currentYear = new Date().getFullYear();
+          const yearValue = Number(value); // Coerce to number in case string is passed
+
+          // Handle NaN and ensure it's a valid number
+          if (isNaN(yearValue)) {
+            return false;
+          }
+
+          return yearValue >= currentYear;
+        },
+        message: 'Expiry year cannot be in the past',
+      },
     },
     cardholderName: {
       type: String,

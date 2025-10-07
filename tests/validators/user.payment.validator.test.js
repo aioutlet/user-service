@@ -354,6 +354,8 @@ describe('Payment Validator', () => {
       const result = userPaymentValidator.validatePaymentMethod(payment);
       expect(result.valid).toBe(true);
       expect(result.normalizedPayment.last4).toBe('1111');
+      // Ensure cardNumber is removed from normalized payment (should not be stored)
+      expect(result.normalizedPayment.cardNumber).toBeUndefined();
     });
 
     it('should convert string month to number', () => {

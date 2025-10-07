@@ -79,14 +79,8 @@ describe('User Controller', () => {
       await createUser(req, res, next);
       expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400, code: 'INVALID_NAME' }));
     });
-    it('should return 400 if roles is invalid', async () => {
-      const req = httpMocks.createRequest({
-        body: { email: 'test@example.com', password: 'Password123', name: 'John', roles: [''] },
-      });
-      const res = httpMocks.createResponse();
-      await createUser(req, res, next);
-      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400, code: 'INVALID_ROLES' }));
-    });
+    // Note: Roles, addresses, paymentMethods, wishlist are not accepted during user creation
+    // They should be added via their respective endpoints after user is created
 
     it('should return 400 if phoneNumber is invalid (too short)', async () => {
       const req = httpMocks.createRequest({

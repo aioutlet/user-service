@@ -2,38 +2,62 @@ import ErrorResponse from '../utils/ErrorResponse.js';
 import logger from '../observability/index.js';
 import User from '../models/user.model.js';
 import asyncHandler from '../middlewares/asyncHandler.js';
-import UserValidationUtility from '../validators/user.validation.utility.js';
+import userValidator from '../validators/user.validator.js';
 import * as userService from '../services/user.service.js';
 
 // @desc    Create a new user
 // @route   POST /users
 // @access  Public
 export const createUser = asyncHandler(async (req, res, next) => {
-  const {
-    email,
-    password,
-    firstName,
-    lastName,
-    displayName,
-    phoneNumber,
-    roles,
-    addresses,
-    paymentMethods,
-    wishlist,
-    preferences,
-  } = req.body;
+  const { email, password, firstName, lastName, phoneNumber } = req.body;
 
-  // Validate user data for creation
-  const validation = UserValidationUtility.validateForCreate(req.body);
-  if (!validation.valid) {
-    // Return the first error with specific code
-    const firstError = validation.detailedErrors[0];
-    return next(new ErrorResponse(firstError.message, 400, firstError.code));
+  // Validate required fields
+  if (!email) {
+    return next(new ErrorResponse('Email is required', 400, 'EMAIL_REQUIRED'));
   }
 
-  // Check for valid email type to prevent NoSQL injection
-  if (typeof email !== 'string') {
-    return next(new ErrorResponse('Invalid email type', 400, 'INVALID_EMAIL'));
+  if (!userValidator.isValidEmail(email)) {
+    return next(new ErrorResponse('Email is required, must be valid, 5-100 chars.', 400, 'INVALID_EMAIL'));
+  }
+
+  if (!password) {
+    return next(new ErrorResponse('Password is required', 400, 'PASSWORD_REQUIRED'));
+  }
+
+  const passwordValidation = userValidator.isValidPassword(password);
+  if (!passwordValidation.valid) {
+    return next(new ErrorResponse(passwordValidation.error, 400, 'INVALID_PASSWORD'));
+  }
+
+  // Validate optional fields if provided
+  if (firstName && !userValidator.isValidFirstName(firstName)) {
+    return next(
+      new ErrorResponse(
+        'First name must contain only letters, spaces, hyphens, apostrophes, and periods (max 50 chars).',
+        400,
+        'INVALID_NAME'
+      )
+    );
+  }
+
+  if (lastName && !userValidator.isValidLastName(lastName)) {
+    return next(
+      new ErrorResponse(
+        'Last name must contain only letters, spaces, hyphens, apostrophes, and periods (max 50 chars).',
+        400,
+        'INVALID_NAME'
+      )
+    );
+  }
+
+  if (phoneNumber && !userValidator.isValidPhoneNumber(phoneNumber)) {
+    return next(
+      new ErrorResponse(
+        'Phone number must be valid (7-15 digits, can include spaces, hyphens, parentheses, and optional + prefix).',
+        400,
+        'INVALID_PHONE_NUMBER'
+      )
+    );
   }
 
   // Check for duplicate email
@@ -44,21 +68,15 @@ export const createUser = asyncHandler(async (req, res, next) => {
 
   const startTime = logger.operationStart('CREATE_USER', req, { email });
   try {
+    // Only create user with basic fields - nested documents should be added via specific endpoints
     const user = new User({
       email,
       password,
       firstName,
       lastName,
-      displayName,
       phoneNumber,
-      roles,
-      addresses,
-      paymentMethods,
-      wishlist,
-      preferences,
-      isEmailVerified: req.body.isEmailVerified,
-      // Note: tier is not included here - users start with default 'basic' tier
-      // Tier upgrades should be handled through admin actions or payment systems
+      // Note: addresses, paymentMethods, wishlist should be added via their respective endpoints
+      // Note: tier defaults to 'basic' - upgrades handled through admin actions or payment systems
     });
     await user.save();
 

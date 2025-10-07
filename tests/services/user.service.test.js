@@ -1,11 +1,9 @@
 import * as userService from '../../src/services/user.service.js';
 import User from '../../src/models/user.model.js';
-import UserValidationUtility from '../../src/validators/user.validation.utility.js';
 import userValidator from '../../src/validators/user.validator.js';
 import ErrorResponse from '../../src/utils/ErrorResponse.js';
 
 jest.mock('../../src/models/user.model.js');
-jest.mock('../../src/validators/user.validation.utility.js');
 jest.mock('../../src/validators/user.validator.js');
 
 describe('User Service', () => {
@@ -63,9 +61,15 @@ describe('User Service', () => {
 
   describe('updateUser', () => {
     beforeEach(() => {
-      UserValidationUtility.filterAllowedFields = jest.fn((fields) => fields);
-      UserValidationUtility.validateForUpdate = jest.fn(() => ({ valid: true, errors: [] }));
-      UserValidationUtility.throwIfInvalid = jest.fn();
+      // Mock validators to return true/valid by default
+      userValidator.isValidEmail = jest.fn(() => true);
+      userValidator.isValidFirstName = jest.fn(() => true);
+      userValidator.isValidLastName = jest.fn(() => true);
+      userValidator.isValidDisplayName = jest.fn(() => true);
+      userValidator.isValidPhoneNumber = jest.fn(() => true);
+      userValidator.isValidRoles = jest.fn(() => true);
+      userValidator.isValidTier = jest.fn(() => true);
+      userValidator.isValidPassword = jest.fn(() => ({ valid: true }));
     });
 
     it('should update allowed fields for regular user', async () => {
@@ -82,8 +86,8 @@ describe('User Service', () => {
 
       const result = await userService.updateUser('123', updateFields, { isAdmin: false });
 
-      expect(UserValidationUtility.filterAllowedFields).toHaveBeenCalledWith(updateFields, false);
-      expect(UserValidationUtility.validateForUpdate).toHaveBeenCalled();
+      expect(userValidator.isValidFirstName).toHaveBeenCalledWith('Jane');
+      expect(userValidator.isValidLastName).toHaveBeenCalledWith('Smith');
       expect(User.findByIdAndUpdate).toHaveBeenCalledWith('123', updateFields, { new: true });
       expect(result).toEqual(mockUpdatedUser);
     });
@@ -102,7 +106,8 @@ describe('User Service', () => {
 
       const result = await userService.updateUser('123', updateFields, { isAdmin: true });
 
-      expect(UserValidationUtility.filterAllowedFields).toHaveBeenCalledWith(updateFields, true);
+      expect(userValidator.isValidRoles).toHaveBeenCalledWith(['admin']);
+      expect(userValidator.isValidTier).toHaveBeenCalledWith('platinum');
       expect(result).toEqual(mockUpdatedUser);
     });
 
@@ -111,20 +116,18 @@ describe('User Service', () => {
         firstName: 'Jane',
         roles: ['admin'], // Will be filtered out for non-admin
       };
-      const filteredFields = { firstName: 'Jane' };
 
-      UserValidationUtility.filterAllowedFields = jest.fn().mockReturnValue(filteredFields);
-      User.findByIdAndUpdate = jest.fn().mockResolvedValue({ _id: '123', ...filteredFields });
+      User.findByIdAndUpdate = jest.fn().mockResolvedValue({ _id: '123', firstName: 'Jane' });
 
       await userService.updateUser('123', updateFields, { isAdmin: false });
 
-      expect(UserValidationUtility.filterAllowedFields).toHaveBeenCalledWith(updateFields, false);
-      expect(User.findByIdAndUpdate).toHaveBeenCalledWith('123', filteredFields, { new: true });
+      // Should only call firstName validation, not roles (filtered out)
+      expect(userValidator.isValidFirstName).toHaveBeenCalledWith('Jane');
+      expect(userValidator.isValidRoles).not.toHaveBeenCalled();
+      expect(User.findByIdAndUpdate).toHaveBeenCalledWith('123', { firstName: 'Jane' }, { new: true });
     });
 
     it('should throw error when no valid fields provided', async () => {
-      UserValidationUtility.filterAllowedFields = jest.fn().mockReturnValue({});
-
       await expect(userService.updateUser('123', { invalid: 'field' }, { isAdmin: false })).rejects.toThrow(
         ErrorResponse
       );
@@ -138,13 +141,12 @@ describe('User Service', () => {
     it('should validate before updating', async () => {
       const updateFields = { firstName: 'Jane' };
 
-      UserValidationUtility.validateForUpdate = jest.fn(() => ({ valid: true, errors: [] }));
       User.findByIdAndUpdate = jest.fn().mockResolvedValue({ _id: '123', ...updateFields });
 
       await userService.updateUser('123', updateFields, { isAdmin: false });
 
-      expect(UserValidationUtility.validateForUpdate).toHaveBeenCalledWith(updateFields, { isAdmin: false });
-      expect(UserValidationUtility.throwIfInvalid).toHaveBeenCalled();
+      expect(userValidator.isValidFirstName).toHaveBeenCalledWith('Jane');
+      expect(User.findByIdAndUpdate).toHaveBeenCalled();
     });
 
     it('should handle password updates separately', async () => {
