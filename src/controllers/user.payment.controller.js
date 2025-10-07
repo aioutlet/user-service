@@ -51,7 +51,22 @@ export const addPaymentMethod = asyncHandler(async (req, res, next) => {
       return next(new ErrorResponse('User not found', 404, 'USER_NOT_FOUND'));
     }
 
-    user.paymentMethods.push(paymentData);
+    // Use normalized payment data from validation (transforms frontend fields to backend schema)
+    // Extract only the fields that should be stored in the database
+    const normalizedPayment = validation.normalizedPayment || paymentData;
+
+    // Remove fields that should never be stored: cardNumber, cvv, billingAddress
+    // eslint-disable-next-line no-unused-vars
+    const { cardNumber, cvv, billingAddress, ...paymentToStore } = normalizedPayment;
+
+    // If isDefault is true, unset existing default
+    if (paymentToStore.isDefault) {
+      user.paymentMethods.forEach((pm) => {
+        pm.isDefault = false;
+      });
+    }
+
+    user.paymentMethods.push(paymentToStore);
     await user.save();
 
     logger.info(`Payment method added for user: ${req.user._id}`);

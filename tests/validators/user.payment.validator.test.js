@@ -1,55 +1,30 @@
 import userPaymentValidator from '../../src/validators/user.payment.validator.js';
 
 describe('Payment Validator', () => {
-  describe('isValidPaymentType', () => {
-    it('should accept valid payment types', () => {
-      expect(userPaymentValidator.isValidPaymentType('credit_card')).toBe(true);
-      expect(userPaymentValidator.isValidPaymentType('debit_card')).toBe(true);
-      expect(userPaymentValidator.isValidPaymentType('paypal')).toBe(true);
-      expect(userPaymentValidator.isValidPaymentType('apple_pay')).toBe(true);
-      expect(userPaymentValidator.isValidPaymentType('google_pay')).toBe(true);
-      expect(userPaymentValidator.isValidPaymentType('bank_transfer')).toBe(true);
-      expect(userPaymentValidator.isValidPaymentType('other')).toBe(true);
+  describe('isValidCardType', () => {
+    it('should accept valid card types', () => {
+      expect(userPaymentValidator.isValidCardType('visa')).toBe(true);
+      expect(userPaymentValidator.isValidCardType('mastercard')).toBe(true);
+      expect(userPaymentValidator.isValidCardType('amex')).toBe(true);
+      expect(userPaymentValidator.isValidCardType('discover')).toBe(true);
     });
 
-    it('should accept case-insensitive types with whitespace', () => {
-      expect(userPaymentValidator.isValidPaymentType(' CREDIT_CARD ')).toBe(true);
-      expect(userPaymentValidator.isValidPaymentType('PayPal ')).toBe(true);
+    it('should accept case-insensitive card types with whitespace', () => {
+      expect(userPaymentValidator.isValidCardType(' VISA ')).toBe(true);
+      expect(userPaymentValidator.isValidCardType('MasterCard ')).toBe(true);
     });
 
-    it('should reject invalid payment types', () => {
-      expect(userPaymentValidator.isValidPaymentType('bitcoin')).toBe(false);
-      expect(userPaymentValidator.isValidPaymentType('cash')).toBe(false);
-      expect(userPaymentValidator.isValidPaymentType('')).toBe(false);
+    it('should reject invalid card types', () => {
+      expect(userPaymentValidator.isValidCardType('jcb')).toBe(false);
+      expect(userPaymentValidator.isValidCardType('paypal')).toBe(false);
+      expect(userPaymentValidator.isValidCardType('unknown')).toBe(false);
+      expect(userPaymentValidator.isValidCardType('')).toBe(false);
     });
 
     it('should reject non-string values', () => {
-      expect(userPaymentValidator.isValidPaymentType(null)).toBe(false);
-      expect(userPaymentValidator.isValidPaymentType(undefined)).toBe(false);
-      expect(userPaymentValidator.isValidPaymentType(123)).toBe(false);
-    });
-  });
-
-  describe('isValidProvider', () => {
-    it('should accept valid providers', () => {
-      expect(userPaymentValidator.isValidProvider('visa')).toBe(true);
-      expect(userPaymentValidator.isValidProvider('mastercard')).toBe(true);
-      expect(userPaymentValidator.isValidProvider('amex')).toBe(true);
-      expect(userPaymentValidator.isValidProvider('discover')).toBe(true);
-      expect(userPaymentValidator.isValidProvider('paypal')).toBe(true);
-      expect(userPaymentValidator.isValidProvider('stripe')).toBe(true);
-      expect(userPaymentValidator.isValidProvider('square')).toBe(true);
-      expect(userPaymentValidator.isValidProvider('other')).toBe(true);
-    });
-
-    it('should accept case-insensitive providers', () => {
-      expect(userPaymentValidator.isValidProvider('VISA')).toBe(true);
-      expect(userPaymentValidator.isValidProvider('MasterCard ')).toBe(true);
-    });
-
-    it('should reject invalid providers', () => {
-      expect(userPaymentValidator.isValidProvider('jcb')).toBe(false);
-      expect(userPaymentValidator.isValidProvider('unknown')).toBe(false);
+      expect(userPaymentValidator.isValidCardType(null)).toBe(false);
+      expect(userPaymentValidator.isValidCardType(undefined)).toBe(false);
+      expect(userPaymentValidator.isValidCardType(123)).toBe(false);
     });
   });
 
@@ -126,7 +101,7 @@ describe('Payment Validator', () => {
   describe('isValidCardholderName', () => {
     it('should accept valid cardholder names', () => {
       expect(userPaymentValidator.isValidCardholderName('John Doe')).toBe(true);
-      expect(userPaymentValidator.isValidCardholderName('Mary O\'Brien')).toBe(true);
+      expect(userPaymentValidator.isValidCardholderName("Mary O'Brien")).toBe(true);
       expect(userPaymentValidator.isValidCardholderName('Jean-Pierre Martin')).toBe(true);
       expect(userPaymentValidator.isValidCardholderName('Dr. Smith Jr.')).toBe(true);
     });
@@ -165,42 +140,6 @@ describe('Payment Validator', () => {
     });
   });
 
-  describe('isValidIsActive', () => {
-    it('should accept boolean values', () => {
-      expect(userPaymentValidator.isValidIsActive(true)).toBe(true);
-      expect(userPaymentValidator.isValidIsActive(false)).toBe(true);
-    });
-
-    it('should reject non-boolean values', () => {
-      expect(userPaymentValidator.isValidIsActive('false')).toBe(false);
-      expect(userPaymentValidator.isValidIsActive(0)).toBe(false);
-    });
-  });
-
-  describe('isValidNickname', () => {
-    it('should accept valid nicknames', () => {
-      expect(userPaymentValidator.isValidNickname('My Card')).toBe(true);
-      expect(userPaymentValidator.isValidNickname('Personal')).toBe(true);
-      expect(userPaymentValidator.isValidNickname('Work Card')).toBe(true);
-    });
-
-    it('should accept null or undefined (optional field)', () => {
-      expect(userPaymentValidator.isValidNickname(null)).toBe(true);
-      expect(userPaymentValidator.isValidNickname(undefined)).toBe(true);
-      expect(userPaymentValidator.isValidNickname('')).toBe(true);
-    });
-
-    it('should reject nicknames longer than 50 characters', () => {
-      const longNickname = 'A'.repeat(51);
-      expect(userPaymentValidator.isValidNickname(longNickname)).toBe(false);
-    });
-
-    it('should accept nicknames up to 50 characters', () => {
-      const maxNickname = 'A'.repeat(50);
-      expect(userPaymentValidator.isValidNickname(maxNickname)).toBe(true);
-    });
-  });
-
   describe('isExpiryDateValid', () => {
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
@@ -234,57 +173,17 @@ describe('Payment Validator', () => {
     });
   });
 
-  describe('validatePaymentTypeAndProvider', () => {
-    it('should accept valid credit card with visa', () => {
-      const errors = userPaymentValidator.validatePaymentTypeAndProvider('credit_card', 'visa');
-      expect(errors).toEqual([]);
-    });
-
-    it('should reject PayPal with non-PayPal provider', () => {
-      const errors = userPaymentValidator.validatePaymentTypeAndProvider('paypal', 'visa');
-      expect(errors).toContain('PayPal payment type must use PayPal as provider');
-    });
-
-    it('should accept PayPal with PayPal provider', () => {
-      const errors = userPaymentValidator.validatePaymentTypeAndProvider('paypal', 'paypal');
-      expect(errors).toEqual([]);
-    });
-
-    it('should accept Apple Pay with card provider', () => {
-      const errors = userPaymentValidator.validatePaymentTypeAndProvider('apple_pay', 'visa');
-      expect(errors).toEqual([]);
-    });
-
-    it('should reject Apple Pay with PayPal provider', () => {
-      const errors = userPaymentValidator.validatePaymentTypeAndProvider('apple_pay', 'paypal');
-      expect(errors.length).toBeGreaterThan(0);
-    });
-
-    it('should accept Google Pay with card provider', () => {
-      const errors = userPaymentValidator.validatePaymentTypeAndProvider('google_pay', 'mastercard');
-      expect(errors).toEqual([]);
-    });
-
-    it('should reject bank transfer without other provider', () => {
-      const errors = userPaymentValidator.validatePaymentTypeAndProvider('bank_transfer', 'visa');
-      expect(errors).toContain('Bank transfer should use "other" as provider');
-    });
-  });
-
   describe('validatePaymentMethod', () => {
     const currentYear = new Date().getFullYear();
 
     it('should validate a complete valid credit card', () => {
       const validCard = {
-        type: 'credit_card',
-        provider: 'visa',
+        cardType: 'visa',
         last4: '1234',
         expiryMonth: 12,
         expiryYear: currentYear + 1,
         cardholderName: 'John Doe',
         isDefault: true,
-        isActive: true,
-        nickname: 'My Visa',
       };
 
       const result = userPaymentValidator.validatePaymentMethod(validCard);
@@ -292,63 +191,48 @@ describe('Payment Validator', () => {
       expect(result.errors).toEqual([]);
     });
 
-    it('should validate debit card', () => {
-      const debitCard = {
-        type: 'debit_card',
-        provider: 'mastercard',
+    it('should validate mastercard', () => {
+      const mastercard = {
+        cardType: 'mastercard',
         last4: '5678',
         expiryMonth: 6,
         expiryYear: currentYear + 2,
         cardholderName: 'Jane Smith',
       };
 
-      const result = userPaymentValidator.validatePaymentMethod(debitCard);
+      const result = userPaymentValidator.validatePaymentMethod(mastercard);
       expect(result.valid).toBe(true);
     });
 
-    it('should validate PayPal account', () => {
-      const paypal = {
-        type: 'paypal',
-        provider: 'paypal',
-        last4: '0000',
-        cardholderName: 'John Doe',
-      };
-
-      const result = userPaymentValidator.validatePaymentMethod(paypal);
-      expect(result.valid).toBe(true);
-    });
-
-    it('should validate Apple Pay', () => {
-      const applePay = {
-        type: 'apple_pay',
-        provider: 'visa',
-        last4: '9999',
+    it('should validate amex', () => {
+      const amex = {
+        cardType: 'amex',
+        last4: '0005',
         expiryMonth: 3,
         expiryYear: currentYear + 1,
         cardholderName: 'Alice Johnson',
       };
 
-      const result = userPaymentValidator.validatePaymentMethod(applePay);
+      const result = userPaymentValidator.validatePaymentMethod(amex);
       expect(result.valid).toBe(true);
     });
 
-    it('should reject invalid payment type', () => {
-      const invalid = {
-        type: 'bitcoin',
-        provider: 'other',
-        last4: '1234',
-        cardholderName: 'John Doe',
+    it('should validate discover', () => {
+      const discover = {
+        cardType: 'discover',
+        last4: '1117',
+        expiryMonth: 9,
+        expiryYear: currentYear + 1,
+        cardholderName: 'Bob Brown',
       };
 
-      const result = userPaymentValidator.validatePaymentMethod(invalid);
-      expect(result.valid).toBe(false);
-      expect(result.errors[0]).toContain('Payment type must be one of');
+      const result = userPaymentValidator.validatePaymentMethod(discover);
+      expect(result.valid).toBe(true);
     });
 
-    it('should reject invalid provider', () => {
+    it('should reject invalid cardType', () => {
       const invalid = {
-        type: 'credit_card',
-        provider: 'unknown',
+        cardType: 'unknown',
         last4: '1234',
         expiryMonth: 12,
         expiryYear: currentYear + 1,
@@ -357,13 +241,25 @@ describe('Payment Validator', () => {
 
       const result = userPaymentValidator.validatePaymentMethod(invalid);
       expect(result.valid).toBe(false);
-      expect(result.errors[0]).toContain('Provider must be one of');
+      expect(result.errors[0]).toContain('Card type must be one of');
+    });
+
+    it('should reject missing cardType', () => {
+      const invalid = {
+        last4: '1234',
+        expiryMonth: 12,
+        expiryYear: currentYear + 1,
+        cardholderName: 'John Doe',
+      };
+
+      const result = userPaymentValidator.validatePaymentMethod(invalid);
+      expect(result.valid).toBe(false);
+      expect(result.errors[0]).toContain('Card type must be one of');
     });
 
     it('should reject invalid last4 format', () => {
       const invalid = {
-        type: 'credit_card',
-        provider: 'visa',
+        cardType: 'visa',
         last4: '123',
         expiryMonth: 12,
         expiryYear: currentYear + 1,
@@ -377,8 +273,7 @@ describe('Payment Validator', () => {
 
     it('should reject expired card', () => {
       const expired = {
-        type: 'credit_card',
-        provider: 'visa',
+        cardType: 'visa',
         last4: '1234',
         expiryMonth: 1,
         expiryYear: currentYear - 1,
@@ -392,8 +287,7 @@ describe('Payment Validator', () => {
 
     it('should reject invalid expiry month', () => {
       const invalid = {
-        type: 'credit_card',
-        provider: 'visa',
+        cardType: 'visa',
         last4: '1234',
         expiryMonth: 13,
         expiryYear: currentYear + 1,
@@ -407,8 +301,7 @@ describe('Payment Validator', () => {
 
     it('should reject invalid cardholder name', () => {
       const invalid = {
-        type: 'credit_card',
-        provider: 'visa',
+        cardType: 'visa',
         last4: '1234',
         expiryMonth: 12,
         expiryYear: currentYear + 1,
@@ -420,23 +313,9 @@ describe('Payment Validator', () => {
       expect(result.errors[0]).toContain('Cardholder name is required');
     });
 
-    it('should reject PayPal with wrong provider', () => {
-      const invalid = {
-        type: 'paypal',
-        provider: 'visa',
-        last4: '1234',
-        cardholderName: 'John Doe',
-      };
-
-      const result = userPaymentValidator.validatePaymentMethod(invalid);
-      expect(result.valid).toBe(false);
-      expect(result.errors).toContain('PayPal payment type must use PayPal as provider');
-    });
-
     it('should reject invalid isDefault value', () => {
       const invalid = {
-        type: 'credit_card',
-        provider: 'visa',
+        cardType: 'visa',
         last4: '1234',
         expiryMonth: 12,
         expiryYear: currentYear + 1,
@@ -449,43 +328,9 @@ describe('Payment Validator', () => {
       expect(result.errors).toContain('isDefault must be a boolean value');
     });
 
-    it('should reject invalid isActive value', () => {
-      const invalid = {
-        type: 'credit_card',
-        provider: 'visa',
-        last4: '1234',
-        expiryMonth: 12,
-        expiryYear: currentYear + 1,
-        cardholderName: 'John Doe',
-        isActive: 1,
-      };
-
-      const result = userPaymentValidator.validatePaymentMethod(invalid);
-      expect(result.valid).toBe(false);
-      expect(result.errors).toContain('isActive must be a boolean value');
-    });
-
-    it('should reject invalid nickname', () => {
-      const longNickname = 'A'.repeat(51);
-      const invalid = {
-        type: 'credit_card',
-        provider: 'visa',
-        last4: '1234',
-        expiryMonth: 12,
-        expiryYear: currentYear + 1,
-        cardholderName: 'John Doe',
-        nickname: longNickname,
-      };
-
-      const result = userPaymentValidator.validatePaymentMethod(invalid);
-      expect(result.valid).toBe(false);
-      expect(result.errors).toContain('Payment method nickname must be less than 50 characters');
-    });
-
     it('should return multiple errors for multiple invalid fields', () => {
       const invalid = {
-        type: 'invalid',
-        provider: 'unknown',
+        cardType: 'invalid',
         last4: '123',
         expiryMonth: 13,
         expiryYear: 2020,
@@ -497,29 +342,46 @@ describe('Payment Validator', () => {
       expect(result.errors.length).toBeGreaterThan(3);
     });
 
-    it('should not require expiry for PayPal', () => {
-      const paypal = {
-        type: 'paypal',
-        provider: 'paypal',
-        last4: '0000',
+    it('should extract last4 from cardNumber if provided', () => {
+      const payment = {
+        cardType: 'visa',
+        cardNumber: '4111111111111111',
+        expiryMonth: 12,
+        expiryYear: currentYear + 1,
         cardholderName: 'John Doe',
-        // No expiry fields
       };
 
-      const result = userPaymentValidator.validatePaymentMethod(paypal);
+      const result = userPaymentValidator.validatePaymentMethod(payment);
       expect(result.valid).toBe(true);
+      expect(result.normalizedPayment.last4).toBe('1111');
     });
 
-    it('should not require expiry for bank transfer', () => {
-      const bankTransfer = {
-        type: 'bank_transfer',
-        provider: 'other',
+    it('should convert string month to number', () => {
+      const payment = {
+        cardType: 'visa',
         last4: '1234',
+        expiryMonth: '6',
+        expiryYear: currentYear + 1,
         cardholderName: 'John Doe',
       };
 
-      const result = userPaymentValidator.validatePaymentMethod(bankTransfer);
+      const result = userPaymentValidator.validatePaymentMethod(payment);
       expect(result.valid).toBe(true);
+      expect(result.normalizedPayment.expiryMonth).toBe(6);
+    });
+
+    it('should convert string year to number', () => {
+      const payment = {
+        cardType: 'visa',
+        last4: '1234',
+        expiryMonth: 12,
+        expiryYear: String(currentYear + 1),
+        cardholderName: 'John Doe',
+      };
+
+      const result = userPaymentValidator.validatePaymentMethod(payment);
+      expect(result.valid).toBe(true);
+      expect(result.normalizedPayment.expiryYear).toBe(currentYear + 1);
     });
   });
 });

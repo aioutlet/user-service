@@ -2,23 +2,9 @@ import mongoose from 'mongoose';
 
 const paymentSchema = new mongoose.Schema(
   {
-    type: {
+    cardType: {
       type: String,
-      enum: [
-        'credit_card',
-        'debit_card',
-        'paypal',
-        'apple_pay',
-        'google_pay',
-        'bank_transfer',
-        'digital_wallet',
-        'other',
-      ],
-      required: true,
-    },
-    provider: {
-      type: String,
-      enum: ['visa', 'mastercard', 'amex', 'discover', 'paypal', 'stripe', 'square', 'bank_transfer', 'other'],
+      enum: ['visa', 'mastercard', 'amex', 'discover'],
       required: true,
     },
     last4: {
@@ -43,41 +29,15 @@ const paymentSchema = new mongoose.Schema(
       trim: true,
       maxlength: [100, 'Cardholder name must be less than 100 characters'],
     },
-    // For digital wallets
-    email: {
-      type: String,
-      trim: true,
-      lowercase: true,
-      match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email'],
-    },
-    // For bank accounts
-    accountType: {
-      type: String,
-      enum: ['checking', 'savings', 'business'],
-    },
-    bankName: {
-      type: String,
-      trim: true,
-      maxlength: [100, 'Bank name must be less than 100 characters'],
-    },
     isDefault: {
       type: Boolean,
       default: false,
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
-    nickname: {
-      type: String,
-      trim: true,
-      maxlength: [50, 'Payment method nickname must be less than 50 characters'],
     },
   },
   {
     _id: true,
     timestamps: true,
-  },
+  }
 );
 
 export default paymentSchema;

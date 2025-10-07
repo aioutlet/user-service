@@ -123,11 +123,14 @@ class UserValidationUtility {
     }
 
     // Payment methods validation
+    const normalizedPayments = [];
     if (userData.paymentMethods && userData.paymentMethods.length > 0) {
       for (let i = 0; i < userData.paymentMethods.length; i++) {
         const paymentValidation = userPaymentValidator.validatePaymentMethod(userData.paymentMethods[i]);
         if (!paymentValidation.valid) {
           errors.push(`Payment method ${i + 1}: ${paymentValidation.errors.join('; ')}`);
+        } else if (paymentValidation.normalizedPayment) {
+          normalizedPayments.push(paymentValidation.normalizedPayment);
         }
       }
     }
@@ -144,6 +147,8 @@ class UserValidationUtility {
       valid: errors.length === 0,
       errors,
       detailedErrors,
+      // Include normalized payment data if available
+      normalizedPayment: normalizedPayments.length > 0 ? normalizedPayments[0] : null,
     };
   }
 

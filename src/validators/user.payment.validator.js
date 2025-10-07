@@ -1,13 +1,8 @@
 // User payment validation utility
 const userPaymentValidator = {
-  isValidPaymentType(type) {
-    const validTypes = ['credit_card', 'debit_card', 'paypal', 'apple_pay', 'google_pay', 'bank_transfer', 'other'];
-    return typeof type === 'string' && validTypes.includes(type.trim().toLowerCase());
-  },
-
-  isValidProvider(provider) {
-    const validProviders = ['visa', 'mastercard', 'amex', 'discover', 'paypal', 'stripe', 'square', 'other'];
-    return typeof provider === 'string' && validProviders.includes(provider.trim().toLowerCase());
+  isValidCardType(cardType) {
+    const validCardTypes = ['visa', 'mastercard', 'amex', 'discover'];
+    return typeof cardType === 'string' && validCardTypes.includes(cardType.trim().toLowerCase());
   },
 
   isValidLast4(last4) {
@@ -38,16 +33,6 @@ const userPaymentValidator = {
     return typeof isDefault === 'boolean';
   },
 
-  isValidIsActive(isActive) {
-    return typeof isActive === 'boolean';
-  },
-
-  isValidNickname(nickname) {
-    // Optional field, but if provided must be valid
-    if (!nickname) {return true;}
-    return typeof nickname === 'string' && nickname.trim().length > 0 && nickname.trim().length <= 50;
-  },
-
   isExpiryDateValid(month, year) {
     if (!this.isValidExpiryMonth(month) || !this.isValidExpiryYear(year)) {
       return false;
@@ -71,93 +56,71 @@ const userPaymentValidator = {
     return false;
   },
 
-  validatePaymentTypeAndProvider(type, provider) {
-    const errors = [];
-
-    // Check if payment type and provider combination makes sense
-    if (type === 'paypal' && provider !== 'paypal') {
-      errors.push('PayPal payment type must use PayPal as provider');
-    }
-
-    if (type === 'apple_pay' && !['visa', 'mastercard', 'amex', 'discover', 'other'].includes(provider)) {
-      errors.push('Apple Pay must be associated with a valid card provider');
-    }
-
-    if (type === 'google_pay' && !['visa', 'mastercard', 'amex', 'discover', 'other'].includes(provider)) {
-      errors.push('Google Pay must be associated with a valid card provider');
-    }
-
-    if (type === 'bank_transfer' && provider !== 'other') {
-      errors.push('Bank transfer should use "other" as provider');
-    }
-
-    return errors;
-  },
-
   validatePaymentMethod(payment) {
     const errors = [];
 
-    if (!this.isValidPaymentType(payment.type)) {
-      errors.push(
-        'Payment type must be one of: credit_card, debit_card, paypal, apple_pay, google_pay, bank_transfer, other',
-      );
+    // Normalize payment data from frontend
+    const normalizedPayment = { ...payment };
+
+    // Extract last4 from cardNumber if present
+    if (payment.cardNumber && !payment.last4) {
+      const cleanCardNumber = payment.cardNumber.replace(/\s/g, '');
+      if (cleanCardNumber.length >= 4) {
+        normalizedPayment.last4 = cleanCardNumber.slice(-4);
+      }
     }
 
-    if (!this.isValidProvider(payment.provider)) {
-      errors.push('Provider must be one of: visa, mastercard, amex, discover, paypal, stripe, square, other');
+    // Convert expiryMonth from string to number if needed
+    if (typeof normalizedPayment.expiryMonth === 'string') {
+      normalizedPayment.expiryMonth = parseInt(normalizedPayment.expiryMonth, 10);
     }
 
-    // Validate type and provider combination
-    if (payment.type && payment.provider) {
-      const typeProviderErrors = this.validatePaymentTypeAndProvider(payment.type, payment.provider);
-      errors.push(...typeProviderErrors);
+    // Convert expiryYear from string to number if needed
+    if (typeof normalizedPayment.expiryYear === 'string') {
+      normalizedPayment.expiryYear = parseInt(normalizedPayment.expiryYear, 10);
     }
 
-    if (!this.isValidLast4(payment.last4)) {
+    // Validate card type
+    if (!this.isValidCardType(normalizedPayment.cardType)) {
+      errors.push('Card type must be one of: visa, mastercard, amex, discover');
+    }
+
+    // Validate last4
+    if (!this.isValidLast4(normalizedPayment.last4)) {
       errors.push('Last 4 digits must be exactly 4 numeric characters');
     }
 
-    // Only validate expiry for card-based payment methods
-    const cardBasedTypes = ['credit_card', 'debit_card', 'apple_pay', 'google_pay'];
-    if (cardBasedTypes.includes(payment.type)) {
-      if (!this.isValidExpiryMonth(payment.expiryMonth)) {
-        errors.push('Expiry month must be a number between 1 and 12');
-      }
-
-      if (!this.isValidExpiryYear(payment.expiryYear)) {
-        errors.push('Expiry year must be a valid year (current year or future)');
-      }
-
-      if (
-        payment.expiryMonth &&
-        payment.expiryYear &&
-        !this.isExpiryDateValid(payment.expiryMonth, payment.expiryYear)
-      ) {
-        errors.push('Card expiry date cannot be in the past');
-      }
+    // Validate expiry date
+    if (!this.isValidExpiryMonth(normalizedPayment.expiryMonth)) {
+      errors.push('Expiry month must be a number between 1 and 12');
     }
 
-    if (!this.isValidCardholderName(payment.cardholderName)) {
+    if (!this.isValidExpiryYear(normalizedPayment.expiryYear)) {
+      errors.push('Expiry year must be a valid year (current year or future)');
+    }
+
+    if (
+      normalizedPayment.expiryMonth &&
+      normalizedPayment.expiryYear &&
+      !this.isExpiryDateValid(normalizedPayment.expiryMonth, normalizedPayment.expiryYear)
+    ) {
+      errors.push('Card expiry date cannot be in the past');
+    }
+
+    if (!this.isValidCardholderName(normalizedPayment.cardholderName)) {
       errors.push(
-        'Cardholder name is required and must contain only letters, spaces, hyphens, apostrophes, and periods',
+        'Cardholder name is required and must contain only letters, spaces, hyphens, apostrophes, and periods'
       );
     }
 
-    if (payment.isDefault !== undefined && !this.isValidIsDefault(payment.isDefault)) {
+    if (normalizedPayment.isDefault !== undefined && !this.isValidIsDefault(normalizedPayment.isDefault)) {
       errors.push('isDefault must be a boolean value');
-    }
-
-    if (payment.isActive !== undefined && !this.isValidIsActive(payment.isActive)) {
-      errors.push('isActive must be a boolean value');
-    }
-
-    if (!this.isValidNickname(payment.nickname)) {
-      errors.push('Payment method nickname must be less than 50 characters');
     }
 
     return {
       valid: errors.length === 0,
       errors: errors,
+      normalizedPayment: normalizedPayment, // Return normalized version for use in controller
     };
   },
 };
