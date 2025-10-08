@@ -31,8 +31,7 @@
     ],
     "paymentMethods": [
       {
-        "type": "credit_card",
-        "provider": "visa",
+        "cardType": "visa",
         "last4": "1234",
         "expiryMonth": 12,
         "expiryYear": 2025,
@@ -90,8 +89,7 @@
     ],
     "paymentMethods": [
       {
-        "type": "credit_card",
-        "provider": "mastercard",
+        "cardType": "mastercard",
         "last4": "5678",
         "expiryMonth": 8,
         "expiryYear": 2026,
@@ -99,11 +97,11 @@
         "isDefault": true
       },
       {
-        "type": "digital_wallet",
-        "provider": "paypal",
+        "cardType": "visa",
         "last4": "1234",
+        "expiryMonth": 8,
+        "expiryYear": 2026,
         "cardholderName": "Sarah Johnson",
-        "email": "sarah.premium@example.com",
         "isDefault": false
       }
     ],
@@ -146,8 +144,7 @@
     ],
     "paymentMethods": [
       {
-        "type": "credit_card",
-        "provider": "amex",
+        "cardType": "amex",
         "last4": "9012",
         "expiryMonth": 6,
         "expiryYear": 2027,
@@ -196,12 +193,11 @@
     ],
     "paymentMethods": [
       {
-        "type": "bank_transfer",
-        "provider": "bank_transfer",
+        "cardType": "visa",
         "last4": "3456",
+        "expiryMonth": 12,
+        "expiryYear": 2026,
         "cardholderName": "Emma Wilson",
-        "accountType": "business",
-        "bankName": "First National Bank",
         "isDefault": true
       }
     ],
@@ -249,8 +245,7 @@
     ],
     "paymentMethods": [
       {
-        "type": "debit_card",
-        "provider": "visa",
+        "cardType": "visa",
         "last4": "7890",
         "expiryMonth": 3,
         "expiryYear": 2025,
