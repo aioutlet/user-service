@@ -2,7 +2,7 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 
-import connectDB from './database/connection.js';
+import connectDB from './database/db.js';
 import adminRoutes from './routes/admin.routes.js';
 import homeRoutes from './routes/home.routes.js';
 import userRoutes from './routes/user.routes.js';
