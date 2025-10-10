@@ -14,44 +14,27 @@ import {
   removeFromWishlist,
 } from '../controllers/user.wishlist.controller.js';
 import { requireAuth } from '../middlewares/auth.middleware.js';
-import rateLimitMiddleware from '../middlewares/rateLimit.middleware.js';
-
-const {
-  profileRateLimit,
-  userCreationRateLimit,
-  addressManagementRateLimit,
-  paymentManagementRateLimit,
-  wishlistRateLimit,
-  userLookupRateLimit,
-  sensitiveOperationsSlowDown,
-} = rateLimitMiddleware;
 
 const router = express.Router();
 
-router.get('/findByEmail', userLookupRateLimit, findByEmail);
-router.post('/', userCreationRateLimit, sensitiveOperationsSlowDown, createUser);
+router.get('/findByEmail', findByEmail);
+router.post('/', createUser);
 
 // Self-service routes
-router.get('/', requireAuth, profileRateLimit, getUser); // get own profile
-router.patch('/', requireAuth, profileRateLimit, sensitiveOperationsSlowDown, updateUser); // update own profile, password, or deactivate
-router.delete('/', requireAuth, profileRateLimit, sensitiveOperationsSlowDown, deleteUser); // self-service delete own account
+router.get('/', requireAuth, getUser); // get own profile
+router.patch('/', requireAuth, updateUser); // update own profile, password, or deactivate
+router.delete('/', requireAuth, deleteUser); // self-service delete own account
 
 // Address management routes
-router.get('/addresses', requireAuth, addressManagementRateLimit, getAddresses);
-router.post('/addresses', requireAuth, addressManagementRateLimit, addAddress);
-router.patch('/addresses/:addressId', requireAuth, addressManagementRateLimit, updateAddress);
-router.delete('/addresses/:addressId', requireAuth, addressManagementRateLimit, removeAddress);
+router.get('/addresses', requireAuth, getAddresses);
+router.post('/addresses', requireAuth, addAddress);
+router.patch('/addresses/:addressId', requireAuth, updateAddress);
+router.delete('/addresses/:addressId', requireAuth, removeAddress);
 
 // Payment method management routes
-router.get('/paymentmethods', requireAuth, paymentManagementRateLimit, getPaymentMethods);
-router.post('/paymentmethods', requireAuth, paymentManagementRateLimit, sensitiveOperationsSlowDown, addPaymentMethod);
-router.patch(
-  '/paymentmethods/:paymentId',
-  requireAuth,
-  paymentManagementRateLimit,
-  sensitiveOperationsSlowDown,
-  updatePaymentMethod
-);
+router.get('/paymentmethods', requireAuth, getPaymentMethods);
+router.post('/paymentmethods', requireAuth, addPaymentMethod);
+router.patch('/paymentmethods/:paymentId', requireAuth, sensitiveOperationsSlowDown, updatePaymentMethod);
 router.delete(
   '/paymentmethods/:paymentId',
   requireAuth,
@@ -61,9 +44,9 @@ router.delete(
 );
 
 // Wishlist management routes
-router.get('/wishlist', requireAuth, wishlistRateLimit, getWishlist);
-router.post('/wishlist', requireAuth, wishlistRateLimit, addToWishlist);
-router.patch('/wishlist/:wishlistId', requireAuth, wishlistRateLimit, updateWishlistItem);
-router.delete('/wishlist/:wishlistId', requireAuth, wishlistRateLimit, removeFromWishlist);
+router.get('/wishlist', requireAuth, getWishlist);
+router.post('/wishlist', requireAuth, addToWishlist);
+router.patch('/wishlist/:wishlistId', requireAuth, updateWishlistItem);
+router.delete('/wishlist/:wishlistId', requireAuth, removeFromWishlist);
 
 export default router;
