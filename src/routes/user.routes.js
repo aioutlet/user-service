@@ -34,14 +34,8 @@ router.delete('/addresses/:addressId', requireAuth, removeAddress);
 // Payment method management routes
 router.get('/paymentmethods', requireAuth, getPaymentMethods);
 router.post('/paymentmethods', requireAuth, addPaymentMethod);
-router.patch('/paymentmethods/:paymentId', requireAuth, sensitiveOperationsSlowDown, updatePaymentMethod);
-router.delete(
-  '/paymentmethods/:paymentId',
-  requireAuth,
-  paymentManagementRateLimit,
-  sensitiveOperationsSlowDown,
-  removePaymentMethod
-);
+router.patch('/paymentmethods/:paymentId', requireAuth, updatePaymentMethod);
+router.delete('/paymentmethods/:paymentId', requireAuth, removePaymentMethod);
 
 // Wishlist management routes
 router.get('/wishlist', requireAuth, getWishlist);
