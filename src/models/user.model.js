@@ -7,6 +7,7 @@ import preferencesSchema from '../schemas/preferences.schema.js';
 
 const userSchema = new mongoose.Schema(
   {
+    // Identity/Auth fields
     email: {
       type: String,
       required: true,
@@ -29,11 +30,6 @@ const userSchema = new mongoose.Schema(
       trim: true,
       maxlength: [50, 'Last name must be less than 50 characters'],
     },
-    displayName: {
-      type: String,
-      trim: true,
-      maxlength: [100, 'Display name must be less than 100 characters'],
-    },
     phoneNumber: {
       type: String,
       trim: true,
@@ -44,15 +40,8 @@ const userSchema = new mongoose.Schema(
       enum: ['customer', 'admin'],
       default: ['customer'],
     },
-    tier: {
-      type: String,
-      enum: ['basic', 'premium', 'gold', 'platinum'],
-      default: 'basic',
-    },
-    addresses: [addressSchema],
-    paymentMethods: [paymentSchema],
-    wishlist: [wishlistSchema],
-    preferences: preferencesSchema,
+
+    // Account-level status flags
     isEmailVerified: {
       type: Boolean,
       default: false,
@@ -61,6 +50,12 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+
+    // Operational data as arrays
+    addresses: [addressSchema],
+    paymentMethods: [paymentSchema],
+    wishlist: [wishlistSchema],
+    preferences: preferencesSchema,
   },
   { timestamps: true }
 );

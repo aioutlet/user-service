@@ -3,10 +3,9 @@
     "email": "john.customer@example.com",
     "password": "Password123!",
     "firstName": "John",
-    "lastName": "Doe",
-    "displayName": "Johnny",
+    "lastName": "Anderson",
+    "phoneNumber": "+1-555-0101",
     "roles": ["customer"],
-    "tier": "basic",
     "isEmailVerified": true,
     "isActive": true,
     "addresses": [
@@ -16,7 +15,8 @@
         "city": "New York",
         "state": "NY",
         "zipCode": "10001",
-        "country": "US",
+        "country": "United States",
+        "phone": "+1-555-0101",
         "isDefault": true
       },
       {
@@ -25,7 +25,7 @@
         "city": "New York",
         "state": "NY",
         "zipCode": "10002",
-        "country": "US",
+        "country": "United States",
         "isDefault": false
       }
     ],
@@ -35,7 +35,7 @@
         "last4": "1234",
         "expiryMonth": 12,
         "expiryYear": 2025,
-        "cardholderName": "John Doe",
+        "cardholderName": "John Anderson",
         "isDefault": true
       }
     ],
@@ -54,15 +54,10 @@
       }
     ],
     "preferences": {
+      "theme": "light",
       "notifications": {
         "email": true,
         "sms": true
-      },
-      "theme": "light"
-    },
-    "social": {
-      "google": {
-        "id": "google123456789"
       }
     }
   },
@@ -71,9 +66,8 @@
     "password": "SecurePass456!",
     "firstName": "Sarah",
     "lastName": "Johnson",
-    "displayName": "Sarah J",
+    "phoneNumber": "+1-555-0102",
     "roles": ["customer"],
-    "tier": "premium",
     "isEmailVerified": true,
     "isActive": true,
     "addresses": [
@@ -83,7 +77,8 @@
         "city": "Los Angeles",
         "state": "CA",
         "zipCode": "90210",
-        "country": "US",
+        "country": "United States",
+        "phone": "+1-555-0102",
         "isDefault": true
       }
     ],
@@ -114,11 +109,11 @@
       }
     ],
     "preferences": {
+      "theme": "dark",
       "notifications": {
         "email": true,
         "sms": true
-      },
-      "theme": "dark"
+      }
     }
   },
   {
@@ -126,9 +121,8 @@
     "password": "AdminPass789!",
     "firstName": "Michael",
     "lastName": "Smith",
-    "displayName": "Mike Admin",
+    "phoneNumber": "+1-555-0103",
     "roles": ["admin", "customer"],
-    "tier": "gold",
     "isEmailVerified": true,
     "isActive": true,
     "addresses": [
@@ -138,7 +132,8 @@
         "city": "Chicago",
         "state": "IL",
         "zipCode": "60601",
-        "country": "US",
+        "country": "United States",
+        "phone": "+1-555-0103",
         "isDefault": true
       }
     ],
@@ -154,11 +149,11 @@
     ],
     "wishlist": [],
     "preferences": {
+      "theme": "light",
       "notifications": {
         "email": false,
         "sms": false
-      },
-      "theme": "light"
+      }
     }
   },
   {
@@ -166,9 +161,8 @@
     "password": "VendorPass321!",
     "firstName": "Emma",
     "lastName": "Wilson",
-    "displayName": "Emma W",
+    "phoneNumber": "+1-555-0104",
     "roles": ["admin", "customer"],
-    "tier": "premium",
     "isEmailVerified": true,
     "isActive": true,
     "addresses": [
@@ -178,7 +172,8 @@
         "city": "Austin",
         "state": "TX",
         "zipCode": "73301",
-        "country": "US",
+        "country": "United States",
+        "phone": "+1-555-0104",
         "isDefault": true
       },
       {
@@ -187,7 +182,7 @@
         "city": "Austin",
         "state": "TX",
         "zipCode": "73302",
-        "country": "US",
+        "country": "United States",
         "isDefault": false
       }
     ],
@@ -210,26 +205,20 @@
       }
     ],
     "preferences": {
+      "theme": "light",
       "notifications": {
         "email": true,
         "sms": false
-      },
-      "theme": "light"
-    },
-    "social": {
-      "facebook": {
-        "id": "facebook987654321"
       }
     }
   },
   {
     "email": "alex.support@example.com",
     "password": "SupportPass654!",
-    "firstName": "Alex",
+    "firstName": "Alexander",
     "lastName": "Brown",
-    "displayName": "Alex Support",
+    "phoneNumber": "+1-555-0105",
     "roles": ["admin", "customer"],
-    "tier": "basic",
     "isEmailVerified": true,
     "isActive": true,
     "addresses": [
@@ -239,7 +228,8 @@
         "city": "Seattle",
         "state": "WA",
         "zipCode": "98101",
-        "country": "US",
+        "country": "United States",
+        "phone": "+1-555-0105",
         "isDefault": true
       }
     ],
@@ -248,8 +238,8 @@
         "cardType": "visa",
         "last4": "7890",
         "expiryMonth": 3,
-        "expiryYear": 2025,
-        "cardholderName": "Alex Brown",
+        "expiryYear": 2026,
+        "cardholderName": "Alexander Brown",
         "isDefault": true
       }
     ],
@@ -262,60 +252,48 @@
       }
     ],
     "preferences": {
+      "theme": "dark",
       "notifications": {
         "email": false,
         "sms": false
-      },
-      "theme": "dark"
+      }
     }
   },
   {
-    "email": "inactive.user@example.com",
+    "email": "james.inactive@example.com",
     "password": "InactivePass999!",
-    "firstName": "Inactive",
-    "lastName": "User",
-    "displayName": "Inactive Account",
+    "firstName": "James",
+    "lastName": "Martinez",
     "roles": ["customer"],
-    "tier": "basic",
     "isEmailVerified": false,
     "isActive": true,
     "addresses": [],
     "paymentMethods": [],
     "wishlist": [],
     "preferences": {
+      "theme": "light",
       "notifications": {
         "email": false,
         "sms": false
-      },
-      "theme": "light"
+      }
     }
   },
   {
-    "email": "social.only@example.com",
-    "password": "SocialPass123!",
-    "firstName": "Social",
-    "lastName": "Login",
-    "displayName": "Social User",
+    "email": "olivia.test@example.com",
+    "password": "TestPass123!",
+    "firstName": "Olivia",
+    "lastName": "Davis",
     "roles": ["customer"],
-    "tier": "basic",
     "isEmailVerified": true,
     "isActive": true,
     "addresses": [],
     "paymentMethods": [],
     "wishlist": [],
     "preferences": {
+      "theme": "light",
       "notifications": {
         "email": true,
         "sms": false
-      },
-      "theme": "light"
-    },
-    "social": {
-      "google": {
-        "id": "google111222333"
-      },
-      "facebook": {
-        "id": "facebook444555666"
       }
     }
   }

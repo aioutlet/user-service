@@ -3,11 +3,12 @@ import logger from '../observability/index.js';
 
 const connectDB = async () => {
   try {
+    const mongodb_uri = process.env.MONGODB_URI;
     // Set global promise library
     mongoose.Promise = global.Promise;
 
-    // Connect to MongoDB using the configuration
-    const conn = await mongoose.connect(process.env.MONGODB_URI, {
+    // Connect to MongoDB with connection options
+    const conn = await mongoose.connect(mongodb_uri, {
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,

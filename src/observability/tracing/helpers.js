@@ -1,27 +1,17 @@
 import { trace } from '@opentelemetry/api';
-import { isTracingEnabled } from './setup.js';
+import { enableTracing } from './setup.js';
 
 /**
  * Tracing helper functions
+ * All environment variables are already validated by config.validator.js
  */
-
-/**
- * Get service information from environment variables
- * @returns {Object} Object containing serviceName and serviceVersion
- */
-export function getServiceInfo() {
-  return {
-    serviceName: process.env.SERVICE_NAME || process.env.OTEL_SERVICE_NAME || 'user-service',
-    serviceVersion: process.env.SERVICE_VERSION || process.env.OTEL_SERVICE_VERSION || '1.0.0',
-  };
-}
 
 /**
  * Get current trace and span IDs from OpenTelemetry context
  * @returns {Object} Object containing traceId and spanId
  */
 export function getTracingContext() {
-  if (!isTracingEnabled()) {
+  if (!enableTracing) {
     return { traceId: null, spanId: null };
   }
 
@@ -50,7 +40,7 @@ export function getTracingContext() {
  * @returns {Object} Span object with context
  */
 export function createOperationSpan(operationName, attributes = {}) {
-  if (!isTracingEnabled()) {
+  if (!enableTracing) {
     return {
       span: null,
       traceId: null,
@@ -62,7 +52,9 @@ export function createOperationSpan(operationName, attributes = {}) {
   }
 
   try {
-    const { serviceName, serviceVersion } = getServiceInfo();
+    // Use validated environment variables directly
+    const serviceName = process.env.SERVICE_NAME || 'user-service';
+    const serviceVersion = process.env.SERVICE_VERSION || '1.0.0';
 
     const tracer = trace.getTracer(serviceName, serviceVersion);
     const span = tracer.startSpan(operationName, {

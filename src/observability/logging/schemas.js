@@ -68,28 +68,16 @@ export const DEFAULT_CONFIG = {
 
 /**
  * Environment-specific configurations
+ * Note: All values are overridden by environment variables validated by config.validator.js
+ * These are fallback defaults only
  */
 export const ENVIRONMENT_CONFIGS = {
-  local: {
-    ...DEFAULT_CONFIG,
-    logLevel: 'DEBUG',
-    format: 'console',
-    enableFile: true,
-    enableTracing: true,
-  },
   development: {
     ...DEFAULT_CONFIG,
     logLevel: 'DEBUG',
     format: 'console',
     enableFile: false,
     enableTracing: false,
-  },
-  staging: {
-    ...DEFAULT_CONFIG,
-    logLevel: 'INFO',
-    format: 'json',
-    enableFile: true,
-    enableTracing: true,
   },
   production: {
     ...DEFAULT_CONFIG,

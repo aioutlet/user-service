@@ -1,7 +1,31 @@
 import winston from 'winston';
-import { colorizeLevel } from '../../utils/colorize.js';
+import colors from 'colors/safe.js';
 import { createBaseLogEntry } from './schemas.js';
 import { getTracingContext } from '../tracing/helpers.js';
+
+// Force colors to be enabled
+colors.enable();
+
+// Log level to color mapping
+const LOG_COLORS = {
+  error: 'red',
+  fatal: 'red',
+  warn: 'yellow',
+  info: 'cyan',
+  debug: 'green',
+  verbose: 'magenta',
+};
+
+/**
+ * Colorize message based on log level
+ * @param {string} text - Text to colorize
+ * @param {string} level - Log level
+ * @returns {string} - Colorized text
+ */
+function colorizeLevel(text, level) {
+  const color = LOG_COLORS[level] || 'white';
+  return colors[color](text);
+}
 
 /**
  * Log formatters for different output types
@@ -148,7 +172,7 @@ export function createJsonFormat(config) {
     winston.format.printf((info) => {
       const unifiedEntry = createUnifiedLogEntry(config, info);
       return JSON.stringify(unifiedEntry);
-    }),
+    })
   );
 }
 
@@ -164,7 +188,8 @@ export function createConsoleFormat(config) {
       const unifiedEntry = createUnifiedLogEntry(config, info);
       const message = formatConsoleMessage(unifiedEntry);
 
-      return config.environment === 'development' ? colorizeLevel(unifiedEntry.level.toLowerCase(), message) : message;
-    }),
+      // Always colorize console output for better readability
+      return colorizeLevel(message, unifiedEntry.level.toLowerCase());
+    })
   );
 }

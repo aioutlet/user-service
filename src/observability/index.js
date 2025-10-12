@@ -16,11 +16,5 @@ export {
   createBaseLogEntry,
 } from './logging/index.js';
 
-// Tracing exports
-export {
-  initializeTracing,
-  shutdownTracing,
-  isTracingEnabled,
-  getTracingContext,
-  createOperationSpan,
-} from './tracing/index.js';
+// Tracing exports (auto-initializes on import)
+export { enableTracing, getTracingContext, createOperationSpan } from './tracing/index.js';

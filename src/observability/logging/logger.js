@@ -7,73 +7,32 @@ import { createJsonFormat, createConsoleFormat } from './formatters.js';
  */
 class Logger {
   constructor(config = {}) {
-    // Get environment-specific config
+    // All environment variables are already validated by config.validator.js
+    // We trust they exist and are valid - no need for defensive programming
     const environment = process.env.NODE_ENV || 'development';
     const envConfig = ENVIRONMENT_CONFIGS[environment] || ENVIRONMENT_CONFIGS.development;
 
-    // Get service name early for path calculation
-    const serviceName = process.env.SERVICE_NAME || config.serviceName || envConfig.serviceName;
-
-    // Merge configurations: env vars > passed config > env defaults > global defaults
+    // Simple configuration: use env vars directly (already validated)
     this.config = {
       ...DEFAULT_CONFIG,
       ...envConfig,
       ...config,
-      // Override with environment variables
-      serviceName: serviceName,
-      version: this._getServiceVersion(),
+      serviceName: process.env.SERVICE_NAME || config.serviceName || envConfig.serviceName,
+      version: process.env.SERVICE_VERSION || config.version || envConfig.version,
       environment: environment,
       logLevel: process.env.LOG_LEVEL || config.logLevel || envConfig.logLevel,
       format: process.env.LOG_FORMAT || config.format || envConfig.format,
-      enableConsole: this._parseBoolean(process.env.LOG_TO_CONSOLE, envConfig.enableConsole),
-      enableFile: this._parseBoolean(process.env.LOG_TO_FILE, envConfig.enableFile),
-      enableTracing: this._parseBoolean(process.env.ENABLE_TRACING, envConfig.enableTracing),
-      filePath: process.env.LOG_FILE_PATH || config.filePath || this._getDefaultLogPath(environment, serviceName),
+      enableConsole: process.env.LOG_TO_CONSOLE === 'true',
+      enableFile: process.env.LOG_TO_FILE === 'true',
+      enableTracing: process.env.ENABLE_TRACING === 'true',
+      filePath: process.env.LOG_FILE_PATH || config.filePath || envConfig.filePath,
     };
 
     // Initialize Winston logger
     this._initializeWinston();
 
-    // Log initialization
-    this.info('Logger initialized', null, {
-      operation: 'logger_initialization',
-      metadata: {
-        config: {
-          ...this.config,
-          // Don't log sensitive paths in production
-          filePath: this.config.environment === 'production' ? '[REDACTED]' : this.config.filePath,
-        },
-      },
-    });
-  }
-
-  /**
-   * Get service version from package.json
-   */
-  _getServiceVersion() {
-    try {
-      return process.env.SERVICE_VERSION || '1.0.0';
-    } catch {
-      return '1.0.0';
-    }
-  }
-
-  /**
-   * Parse boolean from environment variable or return default
-   */
-  _parseBoolean(value, defaultValue) {
-    if (value === undefined || value === null) {
-      return defaultValue;
-    }
-    return value === 'true' || value === true;
-  }
-
-  /**
-   * Get default log file path based on environment
-   */
-  _getDefaultLogPath(environment, serviceName) {
-    const isDevelopment = environment === 'development';
-    return isDevelopment ? `./logs/${serviceName}.log` : `/app/logs/${serviceName}.log`;
+    // Use console.log for initialization (standard practice for bootstrap)
+    console.log('[LOGGER] ✅ Logger initialized');
   }
 
   /**
@@ -88,7 +47,7 @@ class Logger {
         new winston.transports.Console({
           format: this.config.format === 'json' ? createJsonFormat(this.config) : createConsoleFormat(this.config),
           level: this.config.logLevel.toLowerCase(),
-        }),
+        })
       );
     }
 
@@ -99,7 +58,7 @@ class Logger {
           filename: this.config.filePath,
           format: createJsonFormat(this.config),
           level: this.config.logLevel.toLowerCase(),
-        }),
+        })
       );
     }
 
@@ -111,12 +70,12 @@ class Logger {
       exceptionHandlers.push(
         new winston.transports.File({
           filename: this.config.filePath.replace('.log', '-exceptions.log'),
-        }),
+        })
       );
       rejectionHandlers.push(
         new winston.transports.File({
           filename: this.config.filePath.replace('.log', '-rejections.log'),
-        }),
+        })
       );
     }
 
@@ -124,12 +83,12 @@ class Logger {
       exceptionHandlers.push(
         new winston.transports.Console({
           format: createConsoleFormat(this.config),
-        }),
+        })
       );
       rejectionHandlers.push(
         new winston.transports.Console({
           format: createConsoleFormat(this.config),
-        }),
+        })
       );
     }
 
