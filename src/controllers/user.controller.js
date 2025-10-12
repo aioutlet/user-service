@@ -4,6 +4,7 @@ import User from '../models/user.model.js';
 import asyncHandler from '../middlewares/asyncHandler.js';
 import userValidator from '../validators/user.validator.js';
 import * as userService from '../services/user.service.js';
+import messageBrokerService from '../services/messageBroker.service.js';
 
 // @desc    Create a new user
 // @route   POST /users
@@ -90,6 +91,10 @@ export const createUser = asyncHandler(async (req, res, next) => {
       email: user.email,
       hasEmailVerified: user.isEmailVerified,
     });
+
+    // Publish user.created event to message broker
+    const correlationId = req.headers['x-correlation-id'] || req.correlationId;
+    await messageBrokerService.publishUserCreated(user, correlationId);
 
     res.status(201).json(user);
   } catch (err) {
