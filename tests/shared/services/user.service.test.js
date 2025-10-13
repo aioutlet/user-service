@@ -1,10 +1,10 @@
-import * as userService from '../../src/shared/services/user.service.js';
-import User from '../../src/shared/models/user.model.js';
-import userValidator from '../../src/shared/validators/user.validator.js';
-import ErrorResponse from '../../src/shared/utils/ErrorResponse.js';
+import * as userService from '../../../src/shared/services/user.service.js';
+import User from '../../../src/shared/models/user.model.js';
+import userValidator from '../../../src/shared/validators/user.validator.js';
+import ErrorResponse from '../../../src/shared/utils/ErrorResponse.js';
 
-jest.mock('../../src/shared/models/user.model.js');
-jest.mock('../../src/shared/validators/user.validator.js');
+jest.mock('../../../src/shared/models/user.model.js');
+jest.mock('../../../src/shared/validators/user.validator.js');
 
 describe('User Service', () => {
   beforeEach(() => {

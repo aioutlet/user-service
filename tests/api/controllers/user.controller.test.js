@@ -7,14 +7,14 @@ import {
   findByEmail,
   updateUserById,
   updateUserPasswordById,
-} from '../../src/api/controllers/user.controller.js';
-import User from '../../src/shared/models/user.model.js';
-import * as userService from '../../src/shared/services/user.service.js';
+} from '../../../src/api/controllers/user.controller.js';
+import User from '../../../src/shared/models/user.model.js';
+import * as userService from '../../../src/shared/services/user.service.js';
 import httpMocks from 'node-mocks-http';
 
-jest.mock('../../src/shared/models/user.model.js');
-jest.mock('../../src/shared/services/user.service.js');
-jest.mock('../../src/shared/services/messageBroker.service.js', () => ({
+jest.mock('../../../src/shared/models/user.model.js');
+jest.mock('../../../src/shared/services/user.service.js');
+jest.mock('../../../src/shared/services/messageBroker.service.js', () => ({
   publishEvent: jest.fn(),
   publishUserCreated: jest.fn(),
   publishUserUpdated: jest.fn(),
