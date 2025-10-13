@@ -1,4 +1,4 @@
-import userValidator from '../../src/validators/user.validator.js';
+import userValidator from '../../src/shared/validators/user.validator.js';
 
 describe('User Validator', () => {
   describe('isValidPhoneNumber', () => {
@@ -135,7 +135,7 @@ describe('User Validator', () => {
   describe('isValidFirstName', () => {
     it('should return true for valid first name', () => {
       expect(userValidator.isValidFirstName('John')).toBe(true);
-      expect(userValidator.isValidFirstName('O\'Brien')).toBe(true);
+      expect(userValidator.isValidFirstName("O'Brien")).toBe(true);
       expect(userValidator.isValidFirstName('Mary-Jane')).toBe(true);
     });
 
@@ -157,7 +157,7 @@ describe('User Validator', () => {
   describe('isValidLastName', () => {
     it('should return true for valid last name', () => {
       expect(userValidator.isValidLastName('Smith')).toBe(true);
-      expect(userValidator.isValidLastName('O\'Connor')).toBe(true);
+      expect(userValidator.isValidLastName("O'Connor")).toBe(true);
     });
 
     it('should return true for empty/undefined (optional)', () => {

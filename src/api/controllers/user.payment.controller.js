@@ -1,8 +1,8 @@
 import asyncHandler from '../middlewares/asyncHandler.js';
-import ErrorResponse from '../utils/ErrorResponse.js';
-import userPaymentValidator from '../validators/user.payment.validator.js';
-import User from '../models/user.model.js';
-import logger from '../observability/index.js';
+import ErrorResponse from '../../shared/utils/ErrorResponse.js';
+import userPaymentValidator from '../../shared/validators/user.payment.validator.js';
+import User from '../../shared/models/user.model.js';
+import logger from '../../shared/observability/index.js';
 
 /**
  * User Payment Methods Management Controller

@@ -1,5 +1,4 @@
 import axios from 'axios';
-import config from '../config/index.js';
 import logger from '../observability/logging/index.js';
 
 /**
@@ -9,10 +8,9 @@ import logger from '../observability/logging/index.js';
  */
 class MessageBrokerService {
   constructor() {
-    this.baseURL =
-      config.messageBroker?.serviceUrl || process.env.MESSAGE_BROKER_SERVICE_URL || 'http://localhost:4000';
-    this.apiKey = config.messageBroker?.apiKey || process.env.MESSAGE_BROKER_API_KEY || 'dev-api-key-12345';
-    this.serviceName = config.serviceName || 'user-service';
+    this.baseURL = process.env.MESSAGE_BROKER_SERVICE_URL || 'http://localhost:4000';
+    this.apiKey = process.env.MESSAGE_BROKER_API_KEY || 'dev-api-key-12345';
+    this.serviceName = process.env.SERVICE_NAME || 'user-service';
     this.timeout = 5000; // 5 second timeout
     this.enabled = process.env.MESSAGE_BROKER_ENABLED !== 'false'; // Default to enabled
   }

@@ -3,8 +3,8 @@
  * These endpoints are used by monitoring systems, load balancers, and DevOps tools
  */
 
-import { performReadinessCheck, performLivenessCheck, getSystemMetrics } from '../utils/healthChecks.js';
-import logger from '../observability/index.js';
+import { performReadinessCheck, performLivenessCheck, getSystemMetrics } from '../../shared/utils/healthChecks.js';
+import logger from '../../shared/observability/index.js';
 
 export function health(req, res) {
   res.json({

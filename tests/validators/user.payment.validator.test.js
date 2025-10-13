@@ -1,4 +1,4 @@
-import userPaymentValidator from '../../src/validators/user.payment.validator.js';
+import userPaymentValidator from '../../src/shared/validators/user.payment.validator.js';
 
 describe('Payment Validator', () => {
   describe('isValidCardType', () => {
