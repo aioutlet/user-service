@@ -9,10 +9,11 @@ import logger from '../../shared/observability/index.js';
 export function health(req, res) {
   res.json({
     status: 'healthy',
-    service: process.env.SERVICE_NAME,
-    version: process.env.SERVICE_VERSION,
+    service: process.env.SERVICE_NAME || 'user-service',
+    version: process.env.SERVICE_VERSION || '1.0.0',
     environment: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
   });
 }
 

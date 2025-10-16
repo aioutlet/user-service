@@ -7,9 +7,9 @@ import connectDB from '../shared/database/db.js';
 import adminRoutes from './routes/admin.routes.js';
 import homeRoutes from './routes/home.routes.js';
 import userRoutes from './routes/user.routes.js';
+import operationalRoutes from './routes/operational.routes.js';
 import logger from '../shared/observability/index.js';
 import correlationIdMiddleware from './middlewares/correlationId.middleware.js';
-import { health, readiness, liveness, metrics } from './controllers/operational.controller.js';
 
 // Config validation already done in server.js before this module loads
 const app = express();
@@ -35,12 +35,7 @@ await connectDB();
 app.use('/api/home', homeRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin/users', adminRoutes);
-
-// Operational endpoints (for monitoring, load balancers, K8s probes)
-app.get('/health', health); // Main health check
-app.get('/health/ready', readiness); // Readiness probe
-app.get('/health/live', liveness); // Liveness probe
-app.get('/metrics', metrics); // Basic metrics
+app.use('/', operationalRoutes);
 
 // Centralized error handler for consistent error responses
 app.use((err, req, res, _next) => {
