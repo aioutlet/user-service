@@ -22,19 +22,6 @@ const isValidUrl = (url) => {
 };
 
 /**
- * Validates MongoDB URI format
- * @param {string} uri - The MongoDB URI to validate
- * @returns {boolean} - True if valid, false otherwise
- */
-const isValidMongoUri = (uri) => {
-  if (!uri) {
-    return false;
-  }
-  // MongoDB URI should start with mongodb:// or mongodb+srv://
-  return /^mongodb(\+srv)?:\/\/.+/.test(uri);
-};
-
-/**
  * Validates Redis URI format
  * @param {string} uri - The Redis URI to validate
  * @returns {boolean} - True if valid, false otherwise
@@ -98,11 +85,39 @@ const validationRules = {
     errorMessage: 'SERVICE_NAME must be a non-empty string',
   },
 
-  // Database Configuration
-  MONGODB_URI: {
+  // Database Configuration - Individual MongoDB variables
+  MONGO_INITDB_ROOT_USERNAME: {
     required: true,
-    validator: isValidMongoUri,
-    errorMessage: 'MONGODB_URI must be a valid MongoDB connection string (mongodb:// or mongodb+srv://)',
+    validator: (value) => value && value.length > 0,
+    errorMessage: 'MONGO_INITDB_ROOT_USERNAME must be a non-empty string',
+  },
+  MONGO_INITDB_ROOT_PASSWORD: {
+    required: true,
+    validator: (value) => value && value.length > 0,
+    errorMessage: 'MONGO_INITDB_ROOT_PASSWORD must be a non-empty string',
+  },
+  MONGO_INITDB_DATABASE: {
+    required: true,
+    validator: (value) => value && value.length > 0,
+    errorMessage: 'MONGO_INITDB_DATABASE must be a non-empty string',
+  },
+  MONGODB_HOST: {
+    required: false,
+    validator: (value) => !value || value.length > 0,
+    errorMessage: 'MONGODB_HOST must be a non-empty string if provided',
+    default: 'localhost',
+  },
+  MONGODB_PORT: {
+    required: false,
+    validator: (value) => !value || isValidPort(value),
+    errorMessage: 'MONGODB_PORT must be a valid port number if provided',
+    default: '27017',
+  },
+  MONGODB_AUTH_SOURCE: {
+    required: false,
+    validator: (value) => !value || value.length > 0,
+    errorMessage: 'MONGODB_AUTH_SOURCE must be a non-empty string if provided',
+    default: 'admin',
   },
 
   // Message Broker Configuration
