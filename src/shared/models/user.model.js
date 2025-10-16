@@ -56,11 +56,21 @@ const userSchema = new mongoose.Schema(
     paymentMethods: [paymentSchema],
     wishlist: [wishlistSchema],
     preferences: preferencesSchema,
+
+    // Audit trail fields
+    createdBy: {
+      type: String,
+      default: 'SELF_REGISTRATION', // For user self-registration
+    },
+    updatedBy: {
+      type: String,
+    },
   },
   { timestamps: true }
 );
 
 userSchema.pre('save', async function (next) {
+  // Handle password hashing
   if (
     this.isModified('password') &&
     this.password &&
@@ -70,6 +80,24 @@ userSchema.pre('save', async function (next) {
   ) {
     this.password = await bcrypt.hash(this.password, 10);
   }
+
+  // Handle audit fields for self-registration
+  if (this.isNew) {
+    // For new users (registration), if createdBy is not set, use SELF_REGISTRATION
+    if (!this.createdBy) {
+      this.createdBy = 'SELF_REGISTRATION';
+    }
+    // For new users, set updatedBy same as createdBy initially
+    if (!this.updatedBy) {
+      this.updatedBy = this.createdBy;
+    }
+  } else if (this.isModified() && !this.isModified('updatedBy')) {
+    // For updates where updatedBy is not explicitly set, you might want to:
+    // - Leave it undefined (current behavior)
+    // - Set it to the user's own ID if they're updating themselves
+    // - Set it based on context (would need to be passed from controller)
+  }
+
   next();
 });
 
