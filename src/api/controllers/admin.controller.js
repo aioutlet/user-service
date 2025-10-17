@@ -1,6 +1,7 @@
 import User from '../../shared/models/user.model.js';
 import asyncHandler from '../middlewares/asyncHandler.js';
 import * as userService from '../../shared/services/user.service.js';
+import logger from '../../shared/observability/index.js';
 
 /**
  * @desc    Get user statistics for admin dashboard
@@ -8,6 +9,10 @@ import * as userService from '../../shared/services/user.service.js';
  * @access  Admin only
  */
 export const getUserStats = asyncHandler(async (req, res, _next) => {
+  logger.info('Fetching user statistics', {
+    userId: req.user?._id,
+    correlationId: req.correlationId,
+  });
   // Get current date for calculations
   const now = new Date();
   const firstDayThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -53,6 +58,12 @@ export const getUserStats = asyncHandler(async (req, res, _next) => {
     newThisMonth: newUsersThisMonth,
     growth: parseFloat(growth),
   };
+
+  logger.info('User statistics retrieved successfully', {
+    userId: req.user?._id,
+    correlationId: req.correlationId,
+    stats,
+  });
 
   res.json(stats);
 });
