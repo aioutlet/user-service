@@ -149,6 +149,7 @@ export const deleteUser = asyncHandler(async (req, res, next) => {
 // @access  Private (service-to-service)
 export const findByEmail = asyncHandler(async (req, res, next) => {
   try {
+    logger.info('Finding user by email', { email: req.query.email });
     const user = await userService.getUserByEmail(req.query.email);
     res.json(user);
   } catch (err) {
