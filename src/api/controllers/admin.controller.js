@@ -3,6 +3,87 @@ import asyncHandler from '../middlewares/asyncHandler.js';
 import * as userService from '../../shared/services/user.service.js';
 
 /**
+ * @desc    Get user statistics for admin dashboard
+ * @route   GET /admin/stats
+ * @access  Admin only
+ */
+export const getUserStats = asyncHandler(async (req, res, _next) => {
+  // Get current date for calculations
+  const now = new Date();
+  const firstDayThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const firstDayLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastDayLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+
+  // Parallel aggregation queries for better performance
+  const [totalUsers, activeUsers, newUsersThisMonth, newUsersLastMonth] = await Promise.all([
+    // Total users count
+    User.countDocuments({ isActive: { $ne: false } }),
+
+    // Active users (logged in within last 30 days)
+    User.countDocuments({
+      isActive: { $ne: false },
+      lastLoginAt: { $gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) },
+    }),
+
+    // New users this month
+    User.countDocuments({
+      createdAt: { $gte: firstDayThisMonth },
+    }),
+
+    // New users last month (for growth calculation)
+    User.countDocuments({
+      createdAt: {
+        $gte: firstDayLastMonth,
+        $lte: lastDayLastMonth,
+      },
+    }),
+  ]);
+
+  // Calculate growth percentage
+  const growth =
+    newUsersLastMonth > 0
+      ? (((newUsersThisMonth - newUsersLastMonth) / newUsersLastMonth) * 100).toFixed(1)
+      : newUsersThisMonth > 0
+      ? 100
+      : 0;
+
+  const stats = {
+    total: totalUsers,
+    active: activeUsers,
+    newThisMonth: newUsersThisMonth,
+    growth: parseFloat(growth),
+  };
+
+  res.json(stats);
+});
+
+/**
+ * @desc    Get recent users for admin dashboard
+ * @route   GET /admin/users/recent
+ * @access  Admin only
+ */
+export const getRecentUsers = asyncHandler(async (req, res, _next) => {
+  const limit = parseInt(req.query.limit) || 5;
+
+  // Get recently created users
+  const recentUsers = await User.find({ isActive: { $ne: false } }, 'firstName lastName email roles createdAt')
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .lean();
+
+  // Transform to match the expected format
+  const formattedUsers = recentUsers.map((user) => ({
+    id: user._id.toString(),
+    name: `${user.firstName} ${user.lastName}`,
+    email: user.email,
+    role: user.roles.includes('admin') ? 'admin' : 'customer',
+    createdAt: user.createdAt.toISOString(),
+  }));
+
+  res.json(formattedUsers);
+});
+
+/**
  * @desc    Get all users (admin only)
  * @route   GET /admin/users
  * @access  Admin only
