@@ -3,8 +3,83 @@
  * These endpoints are used by monitoring systems, load balancers, and DevOps tools
  */
 
-import { performReadinessCheck, performLivenessCheck, getSystemMetrics } from '../../shared/utils/healthChecks.js';
+import { checkDatabaseHealth } from '../../shared/utils/dependencyHealthChecker.js';
 import logger from '../../shared/observability/index.js';
+
+/**
+ * Get system metrics for monitoring
+ * @returns {Object} - System metrics including memory and uptime
+ */
+function getSystemMetrics() {
+  const memoryUsage = process.memoryUsage();
+  return {
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: {
+      rss: memoryUsage.rss,
+      heapTotal: memoryUsage.heapTotal,
+      heapUsed: memoryUsage.heapUsed,
+      external: memoryUsage.external,
+    },
+    nodeVersion: process.version,
+    platform: process.platform,
+  };
+}
+
+/**
+ * Perform readiness check including database connectivity
+ * @returns {Promise<Object>} - Readiness check results
+ */
+async function performReadinessCheck() {
+  const startTime = Date.now();
+  const checks = {};
+
+  try {
+    // Check database connectivity
+    const dbHealth = await checkDatabaseHealth();
+    checks.database = {
+      status: dbHealth.status,
+      ...(dbHealth.error && { error: dbHealth.error }),
+      ...(dbHealth.readyState && { readyState: dbHealth.readyState }),
+    };
+
+    const allHealthy = Object.values(checks).every((check) => check.status === 'healthy');
+    const status = allHealthy ? 'ready' : 'not ready';
+
+    return {
+      status,
+      timestamp: new Date().toISOString(),
+      totalCheckTime: Date.now() - startTime,
+      checks,
+    };
+  } catch (error) {
+    return {
+      status: 'not ready',
+      timestamp: new Date().toISOString(),
+      totalCheckTime: Date.now() - startTime,
+      checks,
+      error: error.message,
+    };
+  }
+}
+
+/**
+ * Perform liveness check - basic application health
+ * @returns {Promise<Object>} - Liveness check results
+ */
+async function performLivenessCheck() {
+  const checks = {
+    server: { status: 'alive' },
+    timestamp: new Date().toISOString(),
+  };
+
+  return {
+    status: 'alive',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    checks,
+  };
+}
 
 export function health(req, res) {
   res.json({

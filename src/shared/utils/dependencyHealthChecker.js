@@ -1,12 +1,78 @@
-/**
- * Dependency Health Checker
- * Validates external service availability without blocking startup
- * Provides visibility into dependency status through logging
- */
+import mongoose from 'mongoose';
 
-// Note: Using global fetch (available in Node.js 18+)
-// If using older Node.js, install node-fetch: npm install node-fetch
-// import fetch from 'node-fetch';
+/**
+ * Create MongoDB connection URI from environment variables
+ * @returns {string} - MongoDB connection URI
+ */
+function createMongoURI() {
+  const mongoHost = process.env.MONGODB_HOST || 'localhost';
+  const mongoPort = process.env.MONGODB_PORT || '27017';
+  const mongoUsername = process.env.MONGO_INITDB_ROOT_USERNAME;
+  const mongoPassword = process.env.MONGO_INITDB_ROOT_PASSWORD;
+  const mongoDatabase = process.env.MONGO_INITDB_DATABASE;
+  const mongoAuthSource = process.env.MONGODB_AUTH_SOURCE || 'admin';
+
+  if (mongoUsername && mongoPassword) {
+    return `mongodb://${mongoUsername}:${mongoPassword}@${mongoHost}:${mongoPort}/${mongoDatabase}?authSource=${mongoAuthSource}`;
+  } else {
+    return `mongodb://${mongoHost}:${mongoPort}/${mongoDatabase}`;
+  }
+}
+
+/**
+ * Check MongoDB database health using independent connection
+ * @returns {Promise<Object>} - Database health status
+ */
+export async function checkDatabaseHealth() {
+  let connection = null;
+  try {
+    const mongoURI = createMongoURI();
+    console.log(`[DB] Checking database health at ${process.env.MONGODB_HOST}:${process.env.MONGODB_PORT}`);
+    console.log(`[DB] Using MongoDB URI: ${mongoURI.replace(/:([^:@]{1,})+@/, ':***@')}`); // Hide password in logs
+
+    // Create a separate connection for health checking
+    connection = mongoose.createConnection(mongoURI, {
+      maxPoolSize: 1,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 5000,
+      connectTimeoutMS: 5000,
+    });
+
+    // Wait for connection to be established using promise-based approach
+    await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Connection timeout'));
+      }, 6000); // Slightly longer than serverSelectionTimeoutMS
+
+      connection.once('connected', () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+
+      connection.once('error', (error) => {
+        clearTimeout(timeout);
+        reject(error);
+      });
+    });
+
+    // Now the connection should be ready - verify with ping
+    await connection.db.admin().ping();
+    console.log('[DB] ✅ Database connection is healthy');
+    return { service: 'database', status: 'healthy' };
+  } catch (error) {
+    console.error(`[DB] ❌ Database health check failed: ${error.message}`);
+    return { service: 'database', status: 'unhealthy', error: error.message };
+  } finally {
+    // Always close the health check connection
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (closeError) {
+        console.error(`[DB] Warning: Failed to close health check connection: ${closeError.message}`);
+      }
+    }
+  }
+}
 
 /**
  * Check health of service dependencies without blocking startup
@@ -17,7 +83,12 @@
 export async function checkDependencyHealth(dependencies, timeout = 5000) {
   console.log('[DEPS] 🔍 Checking dependency health...');
 
-  const healthChecks = Object.entries(dependencies).map(async ([serviceName, baseUrl]) => {
+  // Check database health first
+  const dbHealth = await checkDatabaseHealth();
+  const healthChecks = [Promise.resolve(dbHealth)];
+
+  // Add external service health checks
+  const serviceChecks = Object.entries(dependencies).map(async ([serviceName, baseUrl]) => {
     try {
       const healthUrl = `${baseUrl}/health`;
       console.log(`[DEPS] Checking ${serviceName} health at ${healthUrl}`);
@@ -38,20 +109,21 @@ export async function checkDependencyHealth(dependencies, timeout = 5000) {
         console.log(`[DEPS] ✅ ${serviceName} is healthy`);
         return { service: serviceName, status: 'healthy', url: healthUrl };
       } else {
-        console.log(`[DEPS] ⚠️ ${serviceName} returned status ${response.status}`);
+        console.error(`[DEPS] ⚠️ ${serviceName} returned status ${response.status}`);
         return { service: serviceName, status: 'unhealthy', url: healthUrl, statusCode: response.status };
       }
     } catch (error) {
       if (error.name === 'AbortError') {
-        console.log(`[DEPS] ⏰ ${serviceName} health check timed out after ${timeout}ms`);
+        console.error(`[DEPS] ⏰ ${serviceName} health check timed out after ${timeout}ms`);
         return { service: serviceName, status: 'timeout', error: 'timeout' };
       } else {
-        console.log(`[DEPS] ❌ ${serviceName} is not reachable: ${error.message}`);
+        console.error(`[DEPS] ❌ ${serviceName} is not reachable: ${error.message}`);
         return { service: serviceName, status: 'unreachable', error: error.message };
       }
     }
   });
 
+  healthChecks.push(...serviceChecks);
   const results = await Promise.allSettled(healthChecks);
 
   // Summary logging
@@ -61,7 +133,7 @@ export async function checkDependencyHealth(dependencies, timeout = 5000) {
   if (healthyServices === totalServices) {
     console.log(`[DEPS] 🎉 All ${totalServices} dependencies are healthy`);
   } else {
-    console.log(`[DEPS] ⚠️ ${healthyServices}/${totalServices} dependencies are healthy`);
+    console.error(`[DEPS] ⚠️ ${healthyServices}/${totalServices} dependencies are healthy`);
   }
 
   return results.map((r) => (r.status === 'fulfilled' ? r.value : { error: r.reason }));
