@@ -30,10 +30,10 @@ RUN npm ci --only=production
 
 # Copy source files
 COPY --from=builder /app/src ./src
-COPY --from=builder /app/database ./database
 
-# Copy environment files if they exist
-COPY --from=builder /app/.env* ./ 2>/dev/null || true
+# Copy environment files if they exist (using RUN with conditional copy)
+RUN if [ -f /app/.env ]; then cp /app/.env ./; fi && \
+    if [ -f /app/.env.example ]; then cp /app/.env.example ./; fi
 
 # Create logs directory
 RUN mkdir -p logs
