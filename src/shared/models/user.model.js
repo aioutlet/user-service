@@ -78,7 +78,7 @@ userSchema.pre('save', async function (next) {
     this.password.length > 0 &&
     !/^\$2[aby]\$\d{2}\$/.test(this.password)
   ) {
-    this.password = await bcrypt.hash(this.password, 10);
+    this.password = await bcrypt.hash(this.password, 12);
   }
 
   // Handle audit fields for self-registration

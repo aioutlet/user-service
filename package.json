@@ -23,9 +23,9 @@
   "homepage": "https://github.com/aioutlet/user-service#readme",
   "scripts": {
     "start:api": "node src/api/server.js",
-    "start:consumer": "node src/consumer/consumer.js",
+    "start:consumer": "node src/consumer/server.js",
     "dev:api": "nodemon src/api/server.js",
-    "dev:consumer": "nodemon src/consumer/consumer.js",
+    "dev:consumer": "nodemon src/consumer/server.js",
     "dev:both": "concurrently \"npm run dev:api\" \"npm run dev:consumer\"",
     "test": "jest --runInBand",
     "test:watch": "jest --runInBand --watch",

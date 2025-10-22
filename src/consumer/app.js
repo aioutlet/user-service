@@ -1,17 +1,4 @@
-/**
- * User Service Consumer
- * Consumes messages from message broker for business events
- * This handles cross-service events that affect user state
- */
-
-// Load environment variables first
-import dotenv from 'dotenv';
-dotenv.config({ debug: false });
-
-import '../shared/observability/logging/logger.js';
-import '../shared/observability/tracing/setup.js';
-
-import logger from '../shared/observability/logging/index.js';
+import logger from '../shared/observability/index.js';
 import { MessageBrokerFactory } from './messaging/MessageBrokerFactory.js';
 import { registerEventHandlers } from './handlers/index.js';
 
@@ -30,8 +17,7 @@ const startConsumer = async () => {
 
     // Initialize message broker
     logger.info(`🔌 Connecting to message broker (${process.env.MESSAGE_BROKER_TYPE || 'rabbitmq'})...`);
-    messageBroker = MessageBrokerFactory.create();
-    await messageBroker.connect();
+    messageBroker = await MessageBrokerFactory.create();
     logger.info('✅ Message broker connected');
 
     // Register event handlers
