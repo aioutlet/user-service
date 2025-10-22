@@ -45,7 +45,7 @@ ENV NODE_ENV=production
 
 # Health check - check if process is running and responsive
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD pgrep -f "node.*consumer.js" || exit 1
+  CMD pgrep -f "node.*server.js" || exit 1
 
 # Run the consumer
-CMD ["node", "src/consumer/consumer.js"]
+CMD ["node", "src/consumer/server.js"]
