@@ -22,19 +22,6 @@ const isValidUrl = (url) => {
 };
 
 /**
- * Validates Redis URI format
- * @param {string} uri - The Redis URI to validate
- * @returns {boolean} - True if valid, false otherwise
- */
-const isValidRedisUri = (uri) => {
-  if (!uri) {
-    return false;
-  }
-  // Redis URI should start with redis:// or rediss://
-  return /^rediss?:\/\/.+/.test(uri);
-};
-
-/**
  * Validates a port number
  * @param {string|number} port - The port to validate
  * @returns {boolean} - True if valid, false otherwise
@@ -140,13 +127,6 @@ const validationRules = {
     required: true,
     validator: (value) => value && value.length > 0,
     errorMessage: 'MESSAGE_BROKER_API_KEY must be a non-empty string',
-  },
-
-  // Cache Configuration
-  REDIS_URL: {
-    required: true,
-    validator: isValidRedisUri,
-    errorMessage: 'REDIS_URL must be a valid Redis connection string (redis:// or rediss://)',
   },
 
   // Security Configuration
