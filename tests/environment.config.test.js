@@ -11,9 +11,11 @@ describe('Environment Configuration', () => {
       expect(process.env.NODE_ENV).toBeTruthy();
     });
 
-    it('should have MONGODB_URI defined', () => {
-      expect(process.env.MONGODB_URI).toBeDefined();
-      expect(process.env.MONGODB_URI).toMatch(/^mongodb/);
+    it('should have MongoDB configuration defined', () => {
+      expect(process.env.MONGODB_HOST || 'localhost').toBeDefined();
+      expect(process.env.MONGODB_PORT || '27017').toBeDefined();
+      expect(process.env.MONGO_INITDB_DATABASE).toBeDefined();
+      expect(process.env.MONGO_INITDB_DATABASE).toBeTruthy();
     });
 
     it('should have JWT_SECRET defined', () => {

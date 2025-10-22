@@ -4,13 +4,18 @@
  * This handles cross-service events that affect user state
  */
 
+// Load environment variables first
+import dotenv from 'dotenv';
+dotenv.config({ debug: false });
+
 import '../shared/observability/logging/logger.js';
 import '../shared/observability/tracing/setup.js';
 
 import logger from '../shared/observability/logging/index.js';
+import { MessageBrokerFactory } from './messaging/MessageBrokerFactory.js';
 import { registerEventHandlers } from './handlers/index.js';
 
-// Placeholder for message broker - will be implemented
+// Message broker instance
 let messageBroker = null;
 let isShuttingDown = false;
 
@@ -23,21 +28,23 @@ const startConsumer = async () => {
     logger.info(`📍 Service: ${process.env.SERVICE_NAME || 'user-service'} v${process.env.SERVICE_VERSION || '1.0.0'}`);
     logger.info(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 
-    // TODO: Initialize message broker when implemented
-    // messageBroker = MessageBrokerFactory.create();
-    // await messageBroker.connect();
-    // logger.info('✅ Message broker connected');
+    // Initialize message broker
+    logger.info(`🔌 Connecting to message broker (${process.env.MESSAGE_BROKER_TYPE || 'rabbitmq'})...`);
+    messageBroker = MessageBrokerFactory.create();
+    await messageBroker.connect();
+    logger.info('✅ Message broker connected');
 
-    // TODO: Register event handlers
-    // registerEventHandlers(messageBroker);
-    // logger.info('📝 Event handlers registered');
+    // Register event handlers
+    registerEventHandlers(messageBroker);
+    logger.info('📝 Event handlers registered');
 
-    // TODO: Start consuming messages
-    // await messageBroker.startConsuming();
-    logger.info('👂 Consumer ready (message broker not yet implemented)');
-    logger.info('🎯 User consumer will process: order.completed, fraud.detected, payment.milestone');
+    // Start consuming messages
+    await messageBroker.startConsuming();
+    logger.info('👂 Consumer started consuming messages');
+    logger.info('🎯 User consumer processing: order.completed, fraud.detected, payment.milestone');
   } catch (error) {
-    logger.error('❌ Failed to start user consumer:', error);
+    logger.error('❌ Failed to start user consumer:', { error: error.message, stack: error.stack });
+    console.error('Consumer startup error:', error);
     process.exit(1);
   }
 };

@@ -14,7 +14,7 @@ import httpMocks from 'node-mocks-http';
 
 jest.mock('../../../src/shared/models/user.model.js');
 jest.mock('../../../src/shared/services/user.service.js');
-jest.mock('../../../src/shared/services/messageBroker.service.js', () => ({
+jest.mock('../../../src/shared/services/messageBrokerServiceClient.js', () => ({
   publishEvent: jest.fn(),
   publishUserCreated: jest.fn(),
   publishUserUpdated: jest.fn(),

@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 
 // Load environment variables from .env file
 // This ensures tests validate the actual .env configuration
-dotenv.config();
+dotenv.config({ quiet: true });
 
 // Only override NODE_ENV to ensure we're in test mode
 process.env.NODE_ENV = 'test';

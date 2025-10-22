@@ -4,7 +4,7 @@ import User from '../../shared/models/user.model.js';
 import asyncHandler from '../middlewares/asyncHandler.js';
 import userValidator from '../../shared/validators/user.validator.js';
 import * as userService from '../../shared/services/user.service.js';
-import messageBrokerService from '../../shared/services/messageBroker.service.js';
+import messageBrokerService from '../../shared/services/messageBrokerServiceClient.js';
 
 // @desc    Create a new user
 // @route   POST /users
