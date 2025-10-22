@@ -29,12 +29,19 @@ export async function publishEvent(routingKey, eventData) {
     };
 
     const url = `${MESSAGE_BROKER_SERVICE_URL}/api/v1/publish`;
+    const headers = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${MESSAGE_BROKER_API_KEY}`,
+    };
+
+    // Add correlation ID to headers if available
+    if (event.metadata.correlationId) {
+      headers['x-correlation-id'] = event.metadata.correlationId;
+    }
+
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${MESSAGE_BROKER_API_KEY}`,
-      },
+      headers,
       body: JSON.stringify(payload),
     });
 
@@ -45,21 +52,23 @@ export async function publishEvent(routingKey, eventData) {
     const result = await response.json();
 
     if (result && result.success) {
-      logger.info('Event published via Message Broker Service', {
+      logger.info('Event published via Message Broker Service', null, {
         operation: 'message_broker_publish',
         routingKey,
         eventId: event.eventId,
         messageId: result.message_id,
+        correlationId: event.metadata.correlationId,
       });
       return result;
     } else {
       throw new Error('Failed to publish event');
     }
   } catch (error) {
-    logger.error('Failed to publish event via Message Broker Service', {
+    logger.error('Failed to publish event via Message Broker Service', null, {
       operation: 'message_broker_publish',
       routingKey,
       error: error.message,
+      correlationId: event?.metadata?.correlationId,
     });
     // Don't throw - graceful degradation (app continues even if event publishing fails)
     return null;
