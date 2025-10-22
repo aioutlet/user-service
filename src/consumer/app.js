@@ -11,23 +11,36 @@ let isShuttingDown = false;
  */
 const startConsumer = async () => {
   try {
-    logger.info('🚀 Starting User Service Consumer...');
-    logger.info(`📍 Service: ${process.env.SERVICE_NAME || 'user-service'} v${process.env.SERVICE_VERSION || '1.0.0'}`);
-    logger.info(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    // Generate startup correlation ID for tracing consumer initialization
+    const startupCorrelationId = `consumer-startup-${Date.now()}`;
+
+    logger.info('🚀 Starting User Service Consumer...', null, { correlationId: startupCorrelationId });
+    logger.info(
+      `📍 Service: ${process.env.SERVICE_NAME || 'user-service'} v${process.env.SERVICE_VERSION || '1.0.0'}`,
+      null,
+      { correlationId: startupCorrelationId }
+    );
+    logger.info(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`, null, {
+      correlationId: startupCorrelationId,
+    });
 
     // Initialize message broker
-    logger.info(`🔌 Connecting to message broker (${process.env.MESSAGE_BROKER_TYPE || 'rabbitmq'})...`);
+    logger.info(`🔌 Connecting to message broker (${process.env.MESSAGE_BROKER_TYPE || 'rabbitmq'})...`, null, {
+      correlationId: startupCorrelationId,
+    });
     messageBroker = await MessageBrokerFactory.create();
-    logger.info('✅ Message broker connected');
+    logger.info('✅ Message broker connected', null, { correlationId: startupCorrelationId });
 
     // Register event handlers
     registerEventHandlers(messageBroker);
-    logger.info('📝 Event handlers registered');
+    logger.info('📝 Event handlers registered', null, { correlationId: startupCorrelationId });
 
     // Start consuming messages
     await messageBroker.startConsuming();
-    logger.info('👂 Consumer started consuming messages');
-    logger.info('🎯 User consumer processing: order.completed, fraud.detected, payment.milestone');
+    logger.info('👂 Consumer started consuming messages', null, { correlationId: startupCorrelationId });
+    logger.info('🎯 User consumer processing: order.completed, fraud.detected, payment.milestone', null, {
+      correlationId: startupCorrelationId,
+    });
   } catch (error) {
     logger.error('❌ Failed to start user consumer:', { error: error.message, stack: error.stack });
     console.error('Consumer startup error:', error);

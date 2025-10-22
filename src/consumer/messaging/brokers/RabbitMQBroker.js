@@ -153,18 +153,39 @@ class RabbitMQBroker extends IMessageBroker {
             contentKeys: Object.keys(content),
           });
 
+          // Construct proper event object with correlation ID
+          const event = {
+            ...content,
+            correlationId,
+            routingKey: msg.fields.routingKey,
+            timestamp: new Date(),
+          };
+
           // Find and execute handler
           const handler = this.eventHandlers.get(routingKey);
           if (handler) {
-            await handler(content, correlationId);
+            await handler(event);
             this.channel.ack(msg);
-            logger.debug(`Message processed successfully: ${routingKey}`);
+            logger.debug(`Message processed successfully: ${routingKey}`, {
+              correlationId,
+              routingKey,
+            });
           } else {
-            logger.warn(`No handler found for event type: ${routingKey}`);
+            logger.warn(`No handler found for event type: ${routingKey}`, {
+              correlationId,
+              routingKey,
+            });
             this.channel.ack(msg); // Ack to prevent redelivery
           }
         } catch (error) {
-          logger.error(`Error processing message from ${queueName}:`, error);
+          const correlationId = msg.properties.correlationId || 'unknown';
+          logger.error(`Error processing message from ${queueName}:`, null, {
+            correlationId,
+            routingKey: msg.fields.routingKey,
+            error: error.message,
+            stack: error.stack,
+            operation: 'message_processing',
+          });
           this.channel.nack(msg, false, false); // Dead letter the message
         }
       }
