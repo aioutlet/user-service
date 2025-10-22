@@ -76,7 +76,7 @@ export async function checkDatabaseHealth() {
 
 /**
  * Check health of service dependencies without blocking startup
- * @param {Object} dependencies - Object with service names as keys and URLs as values
+ * @param {Object} dependencies - Object with service names as keys and health URLs as values
  * @param {number} timeout - Timeout for each health check in ms
  * @returns {Promise<Array>} - Array of health check results
  */
@@ -88,9 +88,8 @@ export async function checkDependencyHealth(dependencies, timeout = 5000) {
   const healthChecks = [Promise.resolve(dbHealth)];
 
   // Add external service health checks
-  const serviceChecks = Object.entries(dependencies).map(async ([serviceName, baseUrl]) => {
+  const serviceChecks = Object.entries(dependencies).map(async ([serviceName, healthUrl]) => {
     try {
-      const healthUrl = `${baseUrl}/health`;
       console.log(`[DEPS] Checking ${serviceName} health at ${healthUrl}`);
 
       // Create fetch with timeout
@@ -141,7 +140,7 @@ export async function checkDependencyHealth(dependencies, timeout = 5000) {
 
 /**
  * Get dependency URLs from environment variables
- * Uses standardized _HEALTH_URL variables for service health endpoints
+ * Uses standardized _HEALTH_URL variables for complete health endpoint URLs
  * @returns {Object} - Object with service names as keys and health URLs as values
  */
 export function getDependencies() {

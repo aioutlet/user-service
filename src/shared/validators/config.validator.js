@@ -128,6 +128,11 @@ const validationRules = {
     validator: (value) => value && value.length > 0,
     errorMessage: 'MESSAGE_BROKER_API_KEY must be a non-empty string',
   },
+  MESSAGE_BROKER_HEALTH_URL: {
+    required: false,
+    validator: (value) => !value || isValidUrl(value),
+    errorMessage: 'MESSAGE_BROKER_HEALTH_URL must be a valid URL if provided',
+  },
 
   // Security Configuration
   JWT_SECRET: {
