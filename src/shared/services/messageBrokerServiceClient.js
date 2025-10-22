@@ -11,32 +11,25 @@ const MESSAGE_BROKER_API_KEY = process.env.MESSAGE_BROKER_API_KEY || 'dev-api-ke
  */
 export async function publishEvent(routingKey, eventData) {
   try {
-    const event = {
-      eventId: generateEventId(),
-      eventType: routingKey,
-      timestamp: new Date().toISOString(),
-      source: 'user-service',
-      data: eventData,
-      metadata: {
-        correlationId: eventData.correlationId || generateEventId(),
-        version: '1.0',
-      },
-    };
-
+    // Send the event data directly to the message broker service
+    // The message broker service will wrap it in the proper Message structure
     const payload = {
       topic: routingKey,
-      data: event,
+      data: eventData, // Send user data directly, not wrapped in another event structure
+      correlationId: eventData.correlationId || generateEventId(),
     };
 
     const url = `${MESSAGE_BROKER_SERVICE_URL}/api/v1/publish`;
     const headers = {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${MESSAGE_BROKER_API_KEY}`,
+      'X-Service-Name': 'user-service', // Set the service name in header
     };
 
     // Add correlation ID to headers if available
-    if (event.metadata.correlationId) {
-      headers['x-correlation-id'] = event.metadata.correlationId;
+    const correlationId = payload.correlationId;
+    if (correlationId) {
+      headers['x-correlation-id'] = correlationId;
     }
 
     const response = await fetch(url, {
@@ -55,9 +48,9 @@ export async function publishEvent(routingKey, eventData) {
       logger.info('Event published via Message Broker Service', null, {
         operation: 'message_broker_publish',
         routingKey,
-        eventId: event.eventId,
+        eventId: generateEventId(),
         messageId: result.message_id,
-        correlationId: event.metadata.correlationId,
+        correlationId: correlationId,
       });
       return result;
     } else {
@@ -68,7 +61,7 @@ export async function publishEvent(routingKey, eventData) {
       operation: 'message_broker_publish',
       routingKey,
       error: error.message,
-      correlationId: event?.metadata?.correlationId,
+      correlationId: correlationId,
     });
     // Don't throw - graceful degradation (app continues even if event publishing fails)
     return null;
@@ -77,11 +70,13 @@ export async function publishEvent(routingKey, eventData) {
 
 /**
  * Publish user.created event
- * @param {object} user - User object
+ * @param {object} user - User object that was created
  * @param {string} correlationId - Correlation ID for tracking
+ * @param {string} [ipAddress] - IP address of the client making the request
+ * @param {string} [userAgent] - User agent string of the client
  * @returns {Promise<object|null>}
  */
-export async function publishUserCreated(user, correlationId) {
+export async function publishUserCreated(user, correlationId, ipAddress = null, userAgent = null) {
   const eventData = {
     userId: user._id.toString(),
     email: user.email,
@@ -90,6 +85,8 @@ export async function publishUserCreated(user, correlationId) {
     phoneNumber: user.phoneNumber,
     isEmailVerified: user.isEmailVerified,
     tier: user.tier,
+    ipAddress: ipAddress,
+    userAgent: userAgent,
     correlationId,
   };
 
@@ -100,9 +97,12 @@ export async function publishUserCreated(user, correlationId) {
  * Publish user.updated event
  * @param {object} user - Updated user object
  * @param {string} correlationId - Correlation ID for tracking
+ * @param {string} [updatedBy] - ID of user who performed the update (for admin actions)
+ * @param {string} [ipAddress] - IP address of the client making the request
+ * @param {string} [userAgent] - User agent string of the client
  * @returns {Promise<object|null>}
  */
-export async function publishUserUpdated(user, correlationId) {
+export async function publishUserUpdated(user, correlationId, updatedBy = null, ipAddress = null, userAgent = null) {
   const eventData = {
     userId: user._id.toString(),
     email: user.email,
@@ -111,6 +111,9 @@ export async function publishUserUpdated(user, correlationId) {
     phoneNumber: user.phoneNumber,
     isEmailVerified: user.isEmailVerified,
     tier: user.tier,
+    updatedBy: updatedBy,
+    ipAddress: ipAddress,
+    userAgent: userAgent,
     correlationId,
   };
 

@@ -92,9 +92,21 @@ export const createUser = asyncHandler(async (req, res, next) => {
       hasEmailVerified: user.isEmailVerified,
     });
 
+    // Extract client IP address
+    const clientIP =
+      req.ip ||
+      req.connection?.remoteAddress ||
+      req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+      req.headers['x-real-ip'] ||
+      req.socket?.remoteAddress ||
+      'unknown';
+
+    // Extract User-Agent string
+    const userAgent = req.headers['user-agent'] || 'unknown';
+
     // Publish user.created event to message broker
     const correlationId = req.headers['x-correlation-id'] || req.correlationId;
-    await messageBrokerService.publishUserCreated(user, correlationId);
+    await messageBrokerService.publishUserCreated(user, correlationId, clientIP, userAgent);
 
     res.status(201).json(user);
   } catch (err) {
@@ -123,6 +135,23 @@ export const getUser = asyncHandler(async (req, res, next) => {
 export const updateUser = asyncHandler(async (req, res, next) => {
   try {
     const result = await userService.updateUser(req.user._id, req.body, { isAdmin: false });
+
+    // Extract client IP address
+    const clientIP =
+      req.ip ||
+      req.connection?.remoteAddress ||
+      req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+      req.headers['x-real-ip'] ||
+      req.socket?.remoteAddress ||
+      'unknown';
+
+    // Extract User-Agent string
+    const userAgent = req.headers['user-agent'] || 'unknown';
+
+    // Publish user.updated event to message broker (self-update)
+    const correlationId = req.headers['x-correlation-id'] || req.correlationId;
+    await messageBrokerService.publishUserUpdated(result, correlationId, req.user._id.toString(), clientIP, userAgent);
+
     res.json(result);
   } catch (err) {
     next(err);

@@ -2,6 +2,7 @@ import User from '../../shared/models/user.model.js';
 import asyncHandler from '../middlewares/asyncHandler.js';
 import * as userService from '../../shared/services/user.service.js';
 import logger from '../../shared/observability/index.js';
+import messageBrokerService from '../../shared/services/messageBrokerServiceClient.js';
 
 /**
  * @desc    Get user statistics for admin dashboard
@@ -126,6 +127,29 @@ export const getUser = asyncHandler(async (req, res, next) => {
 export const updateUser = asyncHandler(async (req, res, next) => {
   try {
     const result = await userService.updateUser(req.params.id, req.body, { isAdmin: true });
+
+    // Extract client IP address
+    const clientIP =
+      req.ip ||
+      req.connection?.remoteAddress ||
+      req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+      req.headers['x-real-ip'] ||
+      req.socket?.remoteAddress ||
+      'unknown';
+
+    // Extract User-Agent string
+    const userAgent = req.headers['user-agent'] || 'unknown';
+
+    // Publish user.updated event to message broker (admin update)
+    const correlationId = req.headers['x-correlation-id'] || req.correlationId;
+    await messageBrokerService.publishUserUpdated(
+      result,
+      correlationId,
+      req.user?._id?.toString(),
+      clientIP,
+      userAgent
+    );
+
     res.json(result);
   } catch (err) {
     next(err);

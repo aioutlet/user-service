@@ -14,6 +14,10 @@ import correlationIdMiddleware from './middlewares/correlationId.middleware.js';
 // Config validation already done in server.js before this module loads
 const app = express();
 
+// Trust proxy for accurate IP address extraction
+// This enables req.ip to work correctly behind reverse proxies
+app.set('trust proxy', true);
+
 // Apply CORS before other middlewares
 const corsOrigins = getConfigArray('CORS_ORIGINS');
 
