@@ -5,32 +5,40 @@ const MESSAGE_BROKER_API_KEY = process.env.MESSAGE_BROKER_API_KEY || 'dev-api-ke
 
 /**
  * Publish an event to the message broker service
- * @param {string} routingKey - The routing key/topic for the event
- * @param {object} eventData - The event data to publish
+ * @param {string} eventType - The event type (e.g., 'user.created', 'user.updated')
+ * @param {object} data - The event business data
+ * @param {object} [metadata] - Optional metadata (ipAddress, userAgent, etc.)
+ * @param {string} [correlationId] - Optional correlation ID for tracking
  * @returns {Promise<object|null>} - Response from message broker or null on failure
  */
-export async function publishEvent(routingKey, eventData) {
+export async function publishEvent(eventType, data, metadata = {}, correlationId = null) {
   try {
-    // Send the event data directly to the message broker service
-    // The message broker service will wrap it in the proper Message structure
+    const eventId = generateEventId();
+    const timestamp = new Date().toISOString();
+    const finalCorrelationId = correlationId || data.correlationId || eventId;
+
+    // AWS EventBridge-inspired payload structure
     const payload = {
-      topic: routingKey,
-      data: eventData, // Send user data directly, not wrapped in another event structure
-      correlationId: eventData.correlationId || generateEventId(),
+      source: 'user-service',
+      eventType: eventType,
+      eventVersion: '1.0',
+      eventId: eventId,
+      timestamp: timestamp,
+      correlationId: finalCorrelationId,
+      data: data,
+      metadata: {
+        environment: process.env.NODE_ENV || 'development',
+        ...metadata,
+      },
     };
 
     const url = `${MESSAGE_BROKER_SERVICE_URL}/api/v1/publish`;
     const headers = {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${MESSAGE_BROKER_API_KEY}`,
-      'X-Service-Name': 'user-service', // Set the service name in header
+      'X-API-Key': MESSAGE_BROKER_API_KEY,
+      'X-Service-Name': 'user-service',
+      'x-correlation-id': finalCorrelationId,
     };
-
-    // Add correlation ID to headers if available
-    const correlationId = payload.correlationId;
-    if (correlationId) {
-      headers['x-correlation-id'] = correlationId;
-    }
 
     const response = await fetch(url, {
       method: 'POST',
@@ -47,10 +55,10 @@ export async function publishEvent(routingKey, eventData) {
     if (result && result.success) {
       logger.info('Event published via Message Broker Service', null, {
         operation: 'message_broker_publish',
-        routingKey,
-        eventId: generateEventId(),
+        eventType,
+        eventId,
         messageId: result.message_id,
-        correlationId: correlationId,
+        correlationId: finalCorrelationId,
       });
       return result;
     } else {
@@ -59,7 +67,7 @@ export async function publishEvent(routingKey, eventData) {
   } catch (error) {
     logger.error('Failed to publish event via Message Broker Service', null, {
       operation: 'message_broker_publish',
-      routingKey,
+      eventType,
       error: error.message,
       correlationId: correlationId,
     });
@@ -77,20 +85,21 @@ export async function publishEvent(routingKey, eventData) {
  * @returns {Promise<object|null>}
  */
 export async function publishUserCreated(user, correlationId, ipAddress = null, userAgent = null) {
-  const eventData = {
+  const data = {
     userId: user._id.toString(),
     email: user.email,
     firstName: user.firstName,
     lastName: user.lastName,
     phoneNumber: user.phoneNumber,
     isEmailVerified: user.isEmailVerified,
-    tier: user.tier,
-    ipAddress: ipAddress,
-    userAgent: userAgent,
-    correlationId,
   };
 
-  return await publishEvent('user.created', eventData);
+  const metadata = {
+    ipAddress,
+    userAgent,
+  };
+
+  return await publishEvent('user.created', data, metadata, correlationId);
 }
 
 /**
@@ -103,21 +112,22 @@ export async function publishUserCreated(user, correlationId, ipAddress = null, 
  * @returns {Promise<object|null>}
  */
 export async function publishUserUpdated(user, correlationId, updatedBy = null, ipAddress = null, userAgent = null) {
-  const eventData = {
+  const data = {
     userId: user._id.toString(),
     email: user.email,
     firstName: user.firstName,
     lastName: user.lastName,
     phoneNumber: user.phoneNumber,
     isEmailVerified: user.isEmailVerified,
-    tier: user.tier,
-    updatedBy: updatedBy,
-    ipAddress: ipAddress,
-    userAgent: userAgent,
-    correlationId,
+    updatedBy,
   };
 
-  return await publishEvent('user.updated', eventData);
+  const metadata = {
+    ipAddress,
+    userAgent,
+  };
+
+  return await publishEvent('user.updated', data, metadata, correlationId);
 }
 
 /**
@@ -127,12 +137,11 @@ export async function publishUserUpdated(user, correlationId, updatedBy = null, 
  * @returns {Promise<object|null>}
  */
 export async function publishUserDeleted(userId, correlationId) {
-  const eventData = {
+  const data = {
     userId,
-    correlationId,
   };
 
-  return await publishEvent('user.deleted', eventData);
+  return await publishEvent('user.deleted', data, {}, correlationId);
 }
 
 /**
@@ -143,14 +152,12 @@ export async function publishUserDeleted(userId, correlationId) {
  * @returns {Promise<object|null>}
  */
 export async function publishUserLoggedIn(userId, email, correlationId) {
-  const eventData = {
+  const data = {
     userId,
     email,
-    timestamp: new Date().toISOString(),
-    correlationId,
   };
 
-  return await publishEvent('user.logged_in', eventData);
+  return await publishEvent('user.logged_in', data, {}, correlationId);
 }
 
 /**
@@ -161,14 +168,12 @@ export async function publishUserLoggedIn(userId, email, correlationId) {
  * @returns {Promise<object|null>}
  */
 export async function publishUserLoggedOut(userId, email, correlationId) {
-  const eventData = {
+  const data = {
     userId,
     email,
-    timestamp: new Date().toISOString(),
-    correlationId,
   };
 
-  return await publishEvent('user.logged_out', eventData);
+  return await publishEvent('user.logged_out', data, {}, correlationId);
 }
 
 /**

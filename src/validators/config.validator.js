@@ -112,12 +112,7 @@ const validationRules = {
     default: 'admin',
   },
 
-  // Message Broker Configuration
-  MESSAGE_BROKER_TYPE: {
-    required: true,
-    validator: (value) => ['rabbitmq', 'kafka', 'azure-servicebus'].includes(value?.toLowerCase()),
-    errorMessage: 'MESSAGE_BROKER_TYPE must be one of: rabbitmq, kafka, azure-servicebus',
-  },
+  // Message Broker Service Configuration (HTTP Gateway)
   MESSAGE_BROKER_SERVICE_URL: {
     required: true,
     validator: isValidUrl,
@@ -247,110 +242,6 @@ const validateConfig = () => {
         errors.push(`   Current value: ${value.substring(0, 100)}...`);
       } else {
         errors.push(`   Current value: ${value}`);
-      }
-    }
-  }
-
-  // Conditional validation based on MESSAGE_BROKER_TYPE
-  const brokerType = process.env.MESSAGE_BROKER_TYPE?.toLowerCase();
-  if (brokerType) {
-    console.log(`[CONFIG] Validating ${brokerType} broker configuration...`);
-
-    if (brokerType === 'rabbitmq') {
-      const rabbitMqVars = {
-        RABBITMQ_URL: {
-          validator: (value) => value && value.startsWith('amqp'),
-          errorMessage: 'RABBITMQ_URL must be a valid AMQP connection string',
-        },
-        RABBITMQ_EXCHANGE: {
-          validator: (value) => value && value.length > 0,
-          errorMessage: 'RABBITMQ_EXCHANGE must be a non-empty string',
-        },
-        RABBITMQ_QUEUE_ORDER_COMPLETED: {
-          validator: (value) => value && value.length > 0,
-          errorMessage: 'RABBITMQ_QUEUE_ORDER_COMPLETED must be a non-empty string',
-        },
-        RABBITMQ_QUEUE_FRAUD_DETECTED: {
-          validator: (value) => value && value.length > 0,
-          errorMessage: 'RABBITMQ_QUEUE_FRAUD_DETECTED must be a non-empty string',
-        },
-        RABBITMQ_QUEUE_PAYMENT_MILESTONE: {
-          validator: (value) => value && value.length > 0,
-          errorMessage: 'RABBITMQ_QUEUE_PAYMENT_MILESTONE must be a non-empty string',
-        },
-      };
-
-      for (const [key, rule] of Object.entries(rabbitMqVars)) {
-        const value = process.env[key];
-        if (!value) {
-          errors.push(`❌ ${key} is required when MESSAGE_BROKER_TYPE=rabbitmq`);
-        } else if (!rule.validator(value)) {
-          errors.push(`❌ ${key}: ${rule.errorMessage}`);
-        }
-      }
-    } else if (brokerType === 'kafka') {
-      const kafkaVars = {
-        KAFKA_BROKERS: {
-          validator: (value) => value && value.includes(':'),
-          errorMessage: 'KAFKA_BROKERS must be comma-separated host:port pairs',
-        },
-        KAFKA_CLIENT_ID: {
-          validator: (value) => value && value.length > 0,
-          errorMessage: 'KAFKA_CLIENT_ID must be a non-empty string',
-        },
-        KAFKA_GROUP_ID: {
-          validator: (value) => value && value.length > 0,
-          errorMessage: 'KAFKA_GROUP_ID must be a non-empty string',
-        },
-        KAFKA_TOPIC_ORDER_COMPLETED: {
-          validator: (value) => value && value.length > 0,
-          errorMessage: 'KAFKA_TOPIC_ORDER_COMPLETED must be a non-empty string',
-        },
-        KAFKA_TOPIC_FRAUD_DETECTED: {
-          validator: (value) => value && value.length > 0,
-          errorMessage: 'KAFKA_TOPIC_FRAUD_DETECTED must be a non-empty string',
-        },
-        KAFKA_TOPIC_PAYMENT_MILESTONE: {
-          validator: (value) => value && value.length > 0,
-          errorMessage: 'KAFKA_TOPIC_PAYMENT_MILESTONE must be a non-empty string',
-        },
-      };
-
-      for (const [key, rule] of Object.entries(kafkaVars)) {
-        const value = process.env[key];
-        if (!value) {
-          errors.push(`❌ ${key} is required when MESSAGE_BROKER_TYPE=kafka`);
-        } else if (!rule.validator(value)) {
-          errors.push(`❌ ${key}: ${rule.errorMessage}`);
-        }
-      }
-    } else if (brokerType === 'azure-servicebus') {
-      const azureVars = {
-        AZURE_SERVICEBUS_CONNECTION_STRING: {
-          validator: (value) => value && value.includes('Endpoint=') && value.includes('SharedAccessKey='),
-          errorMessage: 'AZURE_SERVICEBUS_CONNECTION_STRING must be a valid Azure Service Bus connection string',
-        },
-        AZURE_SERVICEBUS_QUEUE_ORDER_COMPLETED: {
-          validator: (value) => value && value.length > 0,
-          errorMessage: 'AZURE_SERVICEBUS_QUEUE_ORDER_COMPLETED must be a non-empty string',
-        },
-        AZURE_SERVICEBUS_QUEUE_FRAUD_DETECTED: {
-          validator: (value) => value && value.length > 0,
-          errorMessage: 'AZURE_SERVICEBUS_QUEUE_FRAUD_DETECTED must be a non-empty string',
-        },
-        AZURE_SERVICEBUS_QUEUE_PAYMENT_MILESTONE: {
-          validator: (value) => value && value.length > 0,
-          errorMessage: 'AZURE_SERVICEBUS_QUEUE_PAYMENT_MILESTONE must be a non-empty string',
-        },
-      };
-
-      for (const [key, rule] of Object.entries(azureVars)) {
-        const value = process.env[key];
-        if (!value) {
-          errors.push(`❌ ${key} is required when MESSAGE_BROKER_TYPE=azure-servicebus`);
-        } else if (!rule.validator(value)) {
-          errors.push(`❌ ${key}: ${rule.errorMessage}`);
-        }
       }
     }
   }
