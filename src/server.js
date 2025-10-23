@@ -18,10 +18,10 @@ async function startServer() {
     console.log('Step 2: Validating configuration...');
     validateConfig();
 
-    // � STEP 3: Initialize observability
+    // 🔍 STEP 3: Initialize observability
     console.log('Step 3: Initializing observability...');
-    await import('../shared/observability/logging/logger.js');
-    await import('../shared/observability/tracing/setup.js');
+    await import('./observability/logging/logger.js');
+    await import('./observability/tracing/setup.js');
 
     // 🔍 STEP 4: Check dependency health (wait for completion)
     console.log('Step 4: Checking dependency health...');
