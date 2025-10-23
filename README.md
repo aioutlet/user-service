@@ -2,6 +2,12 @@
 
 The `user-service` is responsible for user data management, profile updates, and user account lifecycle for the AIOutlet platform. It is a core microservice in the authentication and user management architecture.
 
+**Architecture Pattern**: Pure Publisher (AWS EventBridge style)
+
+- Publishes events via HTTP to the message-broker-service
+- No direct RabbitMQ or consumer dependencies
+- Consumes events via webhooks (future implementation)
+
 ---
 
 ## Features
@@ -12,6 +18,7 @@ The `user-service` is responsible for user data management, profile updates, and
 - Role-based access control (RBAC)
 - Email verification status
 - Account activation/deactivation
+- Event publishing for user lifecycle changes (created, updated, deleted)
 - Structured logging and error handling
 - Distributed tracing support
 
@@ -21,7 +28,35 @@ The `user-service` is responsible for user data management, profile updates, and
 
 This service is built with Node.js and Express, using Passport.js for authentication strategies and Mongoose for MongoDB object modeling.
 
-The microservice is designed to be deployed independently and can run locally, via Docker, or in Kubernetes (AKS).
+The microservice follows a **pure publisher pattern**, publishing events to the message-broker-service gateway rather than directly to RabbitMQ. This provides:
+
+- Broker-agnostic design (easy to switch from RabbitMQ to Kafka)
+- Consistent authentication and authorization
+- Centralized event routing
+- Simplified service architecture
+
+The service is designed to be deployed independently and can run locally, via Docker, or in Kubernetes (AKS).
+
+---
+
+## Project Structure
+
+```
+src/
+├── controllers/       # Request handlers for all endpoints
+├── database/         # Database connection and configuration
+├── middlewares/      # Express middleware (auth, error handling, etc.)
+├── models/          # Mongoose schemas and models
+├── observability/   # Logging, tracing, and monitoring
+├── routes/          # API route definitions
+├── schemas/         # Validation schemas
+├── services/        # Business logic and external service clients
+├── types/           # TypeScript/JSDoc type definitions
+├── utils/           # Utility functions and helpers
+├── validators/      # Input validation logic
+├── app.js          # Express application setup
+└── server.js       # Server entry point
+```
 
 ---
 

@@ -2,13 +2,13 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 
-import { getConfigArray } from '../shared/validators/config.validator.js';
-import connectDB from '../shared/database/db.js';
+import { getConfigArray } from './validators/config.validator.js';
+import connectDB from './database/db.js';
 import adminRoutes from './routes/admin.routes.js';
 import homeRoutes from './routes/home.routes.js';
 import userRoutes from './routes/user.routes.js';
 import operationalRoutes from './routes/operational.routes.js';
-import logger from '../shared/observability/index.js';
+import logger from './observability/index.js';
 import correlationIdMiddleware from './middlewares/correlationId.middleware.js';
 
 // Config validation already done in server.js before this module loads

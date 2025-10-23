@@ -3,8 +3,8 @@
  * These endpoints are used by monitoring systems, load balancers, and DevOps tools
  */
 
-import { checkDatabaseHealth } from '../../shared/utils/dependencyHealthChecker.js';
-import logger from '../../shared/observability/index.js';
+import { checkDatabaseHealth } from '../utils/dependencyHealthChecker.js';
+import logger from '../observability/index.js';
 
 /**
  * Get system metrics for monitoring

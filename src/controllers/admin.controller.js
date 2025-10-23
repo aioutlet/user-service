@@ -1,8 +1,8 @@
-import User from '../../shared/models/user.model.js';
+import User from '../models/user.model.js';
 import asyncHandler from '../middlewares/asyncHandler.js';
-import * as userService from '../../shared/services/user.service.js';
-import logger from '../../shared/observability/index.js';
-import messageBrokerService from '../../shared/services/messageBrokerServiceClient.js';
+import * as userService from '../services/user.service.js';
+import logger from '../observability/index.js';
+import messageBrokerService from '../services/messageBrokerServiceClient.js';
 
 /**
  * @desc    Get user statistics for admin dashboard

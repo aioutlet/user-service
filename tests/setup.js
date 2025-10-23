@@ -21,7 +21,7 @@ global.console = {
 };
 
 // Mock the logger to prevent winston issues
-jest.mock('../src/shared/observability/index.js', () => ({
+jest.mock('../src/observability/index.js', () => ({
   info: jest.fn(),
   error: jest.fn(),
   warn: jest.fn(),

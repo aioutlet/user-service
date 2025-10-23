@@ -9,8 +9,8 @@ import dotenv from 'dotenv';
 console.log('Step 1: Loading environment variables...');
 dotenv.config({ quiet: true });
 
-import validateConfig from '../shared/validators/config.validator.js';
-import { checkDependencyHealth, getDependencies } from '../shared/utils/dependencyHealthChecker.js';
+import validateConfig from './validators/config.validator.js';
+import { checkDependencyHealth, getDependencies } from './utils/dependencyHealthChecker.js';
 
 async function startServer() {
   try {
