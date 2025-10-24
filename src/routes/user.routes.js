@@ -1,5 +1,12 @@
 import express from 'express';
-import { createUser, findByEmail, updateUser, getUser, deleteUser } from '../controllers/user.controller.js';
+import {
+  createUser,
+  findByEmail,
+  getUserById,
+  updateUser,
+  getUser,
+  deleteUser,
+} from '../controllers/user.controller.js';
 import { getAddresses, addAddress, updateAddress, removeAddress } from '../controllers/user.address.controller.js';
 import {
   getPaymentMethods,
@@ -17,10 +24,12 @@ import { requireAuth } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
+// Public service-to-service routes (no auth required)
 router.get('/findByEmail', findByEmail);
+router.get('/:id', getUserById);
 router.post('/', createUser);
 
-// Self-service routes
+// Self-service routes (auth required)
 router.get('/', requireAuth, getUser); // get own profile
 router.patch('/', requireAuth, updateUser); // update own profile, password, or deactivate
 router.delete('/', requireAuth, deleteUser); // self-service delete own account

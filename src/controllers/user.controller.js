@@ -175,7 +175,7 @@ export const deleteUser = asyncHandler(async (req, res, next) => {
 
 // @desc    Find user by email
 // @route   GET /users/findByEmail
-// @access  Private (service-to-service)
+// @access  Public (service-to-service)
 export const findByEmail = asyncHandler(async (req, res, next) => {
   try {
     logger.info('Finding user by email', { email: req.query.email });
@@ -186,8 +186,20 @@ export const findByEmail = asyncHandler(async (req, res, next) => {
   }
 });
 
+// @desc    Find user by ID
+// @route   GET /users/:id
+// @access  Public (service-to-service)
+export const getUserById = asyncHandler(async (req, res, next) => {
+  try {
+    logger.info('Finding user by ID', { userId: req.params.id });
+    const user = await userService.getUserById(req.params.id);
+    res.json(user);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Test compatibility functions - aliases to existing functions
-export const getUserById = getUser;
 
 // @desc    Deactivate account (set isActive to false)
 // @route   PATCH /users/deactivate
