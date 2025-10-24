@@ -3,6 +3,7 @@ import asyncHandler from '../middlewares/asyncHandler.js';
 import * as userService from '../services/user.service.js';
 import logger from '../observability/index.js';
 import messageBrokerService from '../services/messageBrokerServiceClient.js';
+import ErrorResponse from '../utils/ErrorResponse.js';
 
 /**
  * @desc    Get user statistics for admin dashboard
@@ -130,6 +131,86 @@ export const getRecentUsers = asyncHandler(async (req, res, _next) => {
 export const getUsers = asyncHandler(async (req, res, _next) => {
   const users = await User.find({}, '-password'); // Exclude password field
   res.json(users);
+});
+
+/**
+ * @desc    Create a new user (admin only)
+ * @route   POST /admin/users
+ * @access  Admin only
+ */
+export const createUser = asyncHandler(async (req, res, next) => {
+  // Map phone field to phoneNumber if provided
+  if (req.body.phone && !req.body.phoneNumber) {
+    req.body.phoneNumber = req.body.phone;
+  }
+
+  // Note: We can't directly call createUserBase because it calls res.status(201).json()
+  // and we need to ensure password is excluded from the response.
+  // Instead, we'll implement user creation here with proper admin context.
+
+  const { firstName, lastName, email, password, phoneNumber, roles, isActive } = req.body;
+
+  // Basic validation
+  if (!email || !password || !firstName || !lastName) {
+    return next(
+      new ErrorResponse('Email, password, first name, and last name are required', 400, 'MISSING_REQUIRED_FIELDS')
+    );
+  }
+
+  // Check for duplicate email
+  const existingUser = await User.findOne({ email: email.toLowerCase() });
+  if (existingUser) {
+    return next(new ErrorResponse('Email already exists', 409, 'EMAIL_EXISTS'));
+  }
+
+  try {
+    // Create new user with admin-specified fields
+    const user = await User.create({
+      firstName,
+      lastName,
+      email: email.toLowerCase(),
+      password, // Will be hashed by model pre-save middleware
+      phoneNumber,
+      roles: roles || ['customer'],
+      isActive: isActive !== undefined ? isActive : true,
+      isEmailVerified: false,
+      createdBy: req.user?._id?.toString() || 'ADMIN',
+      updatedBy: req.user?._id?.toString() || 'ADMIN',
+    });
+
+    logger.info('User created by admin', {
+      userId: user._id,
+      adminId: req.user?._id,
+      correlationId: req.correlationId,
+    });
+
+    // Extract client IP and User-Agent for event publishing
+    const clientIP =
+      req.ip ||
+      req.connection?.remoteAddress ||
+      req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+      req.headers['x-real-ip'] ||
+      req.socket?.remoteAddress ||
+      'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    const correlationId = req.headers['x-correlation-id'] || req.correlationId;
+
+    // Publish user.created event
+    await messageBrokerService.publishUserCreated(user, correlationId, clientIP, userAgent);
+
+    // Return user without password
+    const userResponse = user.toObject();
+    delete userResponse.password;
+
+    res.status(201).json(userResponse);
+  } catch (err) {
+    logger.error('Failed to create user', {
+      error: err.message,
+      adminId: req.user?._id,
+      correlationId: req.correlationId,
+    });
+    next(err);
+  }
 });
 
 /**

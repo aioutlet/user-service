@@ -2,6 +2,7 @@ import express from 'express';
 import {
   getUsers,
   getUser,
+  createUser,
   updateUser,
   deleteUser,
   getUserStats,
@@ -21,6 +22,7 @@ router.get('/list/recent', getRecentUsers); // GET /admin/users/list/recent
 
 // General routes
 router.get('/', getUsers); // GET /admin/users
+router.post('/', createUser); // POST /admin/users
 router.get('/:id', getUser); // GET /admin/users/:id
 router.patch('/:id', updateUser); // PATCH /admin/users/:id
 router.delete('/:id', deleteUser); // DELETE /admin/users/:id
