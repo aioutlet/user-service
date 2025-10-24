@@ -70,7 +70,7 @@ export const createUser = asyncHandler(async (req, res, next) => {
   const startTime = logger.operationStart('CREATE_USER', req, { email });
   try {
     // Only create user with basic fields - nested documents should be added via specific endpoints
-    const user = new User({
+    const userData = {
       email,
       password,
       firstName,
@@ -78,7 +78,18 @@ export const createUser = asyncHandler(async (req, res, next) => {
       phoneNumber,
       // Note: addresses, paymentMethods, wishlist should be added via their respective endpoints
       // Note: tier defaults to 'basic' - upgrades handled through admin actions or payment systems
-    });
+    };
+
+    // Allow setting isEmailVerified and roles for testing/admin purposes
+    // In production, these would typically be set through separate workflows
+    if (req.body.isEmailVerified !== undefined) {
+      userData.isEmailVerified = req.body.isEmailVerified;
+    }
+    if (req.body.roles && Array.isArray(req.body.roles)) {
+      userData.roles = req.body.roles;
+    }
+
+    const user = new User(userData);
     await user.save();
 
     logger.operationComplete('CREATE_USER', startTime, req, {
