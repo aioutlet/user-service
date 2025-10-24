@@ -77,22 +77,49 @@ export const getUserStats = asyncHandler(async (req, res, _next) => {
 export const getRecentUsers = asyncHandler(async (req, res, _next) => {
   const limit = parseInt(req.query.limit) || 5;
 
-  // Get recently created users
-  const recentUsers = await User.find({ isActive: { $ne: false } }, 'firstName lastName email roles createdAt')
-    .sort({ createdAt: -1 })
-    .limit(limit)
-    .lean();
+  logger.info('Fetching recent users', {
+    userId: req.user?._id,
+    correlationId: req.correlationId,
+    limit,
+  });
 
-  // Transform to match the expected format
-  const formattedUsers = recentUsers.map((user) => ({
-    id: user._id.toString(),
-    name: `${user.firstName} ${user.lastName}`,
-    email: user.email,
-    role: user.roles.includes('admin') ? 'admin' : 'customer',
-    createdAt: user.createdAt.toISOString(),
-  }));
+  try {
+    // Get recently created users
+    const recentUsers = await User.find({ isActive: { $ne: false } }, 'firstName lastName email roles createdAt')
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
 
-  res.json(formattedUsers);
+    logger.debug('Found recent users', {
+      correlationId: req.correlationId,
+      count: recentUsers.length,
+    });
+
+    // Transform to match the expected format
+    const formattedUsers = recentUsers.map((user) => ({
+      id: user._id.toString(),
+      name: `${user.firstName} ${user.lastName}`,
+      email: user.email,
+      role: user.roles.includes('admin') ? 'admin' : 'customer',
+      createdAt: user.createdAt.toISOString(),
+    }));
+
+    logger.info('Recent users retrieved successfully', {
+      userId: req.user?._id,
+      correlationId: req.correlationId,
+      count: formattedUsers.length,
+    });
+
+    res.json(formattedUsers);
+  } catch (error) {
+    logger.error('Failed to fetch recent users', {
+      userId: req.user?._id,
+      correlationId: req.correlationId,
+      error: error.message,
+      stack: error.stack,
+    });
+    throw error;
+  }
 });
 
 /**

@@ -44,6 +44,20 @@ app.use('/', operationalRoutes);
 // Centralized error handler for consistent error responses
 app.use((err, req, res, _next) => {
   const status = err.status || 500;
+  const correlationId = req.correlationId || 'no-correlation';
+
+  // Log the error with full details
+  logger.error(`Request failed: ${req.method} ${req.originalUrl} - ${err.message || 'Unknown error'}`, {
+    correlationId,
+    method: req.method,
+    url: req.originalUrl,
+    status,
+    errorCode: err.code || 'INTERNAL_ERROR',
+    errorMessage: err.message,
+    errorStack: err.stack,
+    userId: req.user?._id,
+  });
+
   res.status(status).json({
     error: {
       code: err.code || 'INTERNAL_ERROR',
