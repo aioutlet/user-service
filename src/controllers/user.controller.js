@@ -10,55 +10,13 @@ import messageBrokerService from '../services/messageBrokerServiceClient.js';
 // @route   POST /users
 // @access  Public
 export const createUser = asyncHandler(async (req, res, next) => {
+  // Validate request body
   const { email, password, firstName, lastName, phoneNumber } = req.body;
 
-  // Validate required fields
-  if (!email) {
-    return next(new ErrorResponse('Email is required', 400, 'EMAIL_REQUIRED'));
-  }
-
-  if (!userValidator.isValidEmail(email)) {
-    return next(new ErrorResponse('Email is required, must be valid, 5-100 chars.', 400, 'INVALID_EMAIL'));
-  }
-
-  if (!password) {
-    return next(new ErrorResponse('Password is required', 400, 'PASSWORD_REQUIRED'));
-  }
-
-  const passwordValidation = userValidator.isValidPassword(password);
-  if (!passwordValidation.valid) {
-    return next(new ErrorResponse(passwordValidation.error, 400, 'INVALID_PASSWORD'));
-  }
-
-  // Validate optional fields if provided
-  if (firstName && !userValidator.isValidFirstName(firstName)) {
-    return next(
-      new ErrorResponse(
-        'First name must contain only letters, spaces, hyphens, apostrophes, and periods (max 50 chars).',
-        400,
-        'INVALID_NAME'
-      )
-    );
-  }
-
-  if (lastName && !userValidator.isValidLastName(lastName)) {
-    return next(
-      new ErrorResponse(
-        'Last name must contain only letters, spaces, hyphens, apostrophes, and periods (max 50 chars).',
-        400,
-        'INVALID_NAME'
-      )
-    );
-  }
-
-  if (phoneNumber && !userValidator.isValidPhoneNumber(phoneNumber)) {
-    return next(
-      new ErrorResponse(
-        'Phone number must be valid (7-15 digits, can include spaces, hyphens, parentheses, and optional + prefix).',
-        400,
-        'INVALID_PHONE_NUMBER'
-      )
-    );
+  // Use centralized validator
+  const validation = userValidator.validateUserData({ email, password, firstName, lastName, phoneNumber });
+  if (!validation.valid) {
+    return next(new ErrorResponse(validation.error, 400, validation.code));
   }
 
   // Check for duplicate email
