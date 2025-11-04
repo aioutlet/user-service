@@ -2,9 +2,9 @@
 
 The `user-service` is responsible for user data management, profile updates, and user account lifecycle for the AIOutlet platform. It is a core microservice in the authentication and user management architecture.
 
-**Architecture Pattern**: Pure Publisher (AWS EventBridge style)
+**Architecture Pattern**: Pure Publisher (Dapr Pub/Sub)
 
-- Publishes events via HTTP to the message-broker-service
+- Publishes events via Dapr SDK to RabbitMQ backend
 - No direct RabbitMQ or consumer dependencies
 - Consumes events via webhooks (future implementation)
 
@@ -28,7 +28,7 @@ The `user-service` is responsible for user data management, profile updates, and
 
 This service is built with Node.js and Express, using Passport.js for authentication strategies and Mongoose for MongoDB object modeling.
 
-The microservice follows a **pure publisher pattern**, publishing events to the message-broker-service gateway rather than directly to RabbitMQ. This provides:
+The microservice follows a **pure publisher pattern**, publishing events via Dapr Pub/Sub to RabbitMQ backend. This provides:
 
 - Broker-agnostic design (easy to switch from RabbitMQ to Kafka)
 - Consistent authentication and authorization

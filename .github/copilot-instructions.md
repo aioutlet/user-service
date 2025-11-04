@@ -7,13 +7,14 @@ This file provides context and guidelines for AI coding assistants working on th
 **User Service** is a foundational Node.js/Express microservice that manages user accounts, profiles, addresses, payment methods, wishlists, and preferences. It follows the **Pure Publisher** pattern for event-driven communication.
 
 **Key Characteristics:**
+
 - **Technology**: Node.js 18+, Express 5.1.0, MongoDB 8.18.0, Mongoose ODM
 - **Port**: 5000
-- **Architecture Pattern**: Pure Publisher (AWS EventBridge style)
+- **Architecture Pattern**: Pure Publisher (using Dapr Pub/Sub)
 - **Database**: MongoDB (user data storage)
-- **Event Communication**: HTTP POST to message-broker-service (no direct RabbitMQ/Kafka)
+- **Event Communication**: Dapr Pub/Sub (RabbitMQ backend)
 - **Authentication**: JWT validation (tokens provided by auth-service)
-- **Dependencies**: Minimal - only MongoDB and message-broker-service
+- **Dependencies**: MongoDB and Dapr
 
 ---
 
@@ -29,8 +30,8 @@ src/
 ├── routes/              # API route definitions
 ├── schemas/             # Sub-schemas (Address, Payment, Wishlist, Preferences)
 ├── services/            # Business logic and external clients
-│   ├── messageBrokerServiceClient.js  # Event publishing
-│   └── user.service.js                # User business logic
+│   ├── daprPublisher.js         # Dapr event publishing
+│   └── user.service.js          # User business logic
 ├── types/               # TypeScript/JSDoc type definitions
 ├── utils/               # Utility functions and helpers
 ├── validators/          # Input validation logic
@@ -42,18 +43,19 @@ src/
 
 ## Key Patterns & Conventions
 
-### 1. Event Publishing (AWS EventBridge Style)
+### 1. Event Publishing (Dapr Pub/Sub)
 
-**ALWAYS use the message-broker-service gateway for events:**
+**ALWAYS use the Dapr SDK for event publishing:**
 
 ```javascript
-import messageBrokerService from '../services/messageBrokerServiceClient.js';
+import daprPublisher from '../services/daprPublisher.js';
 
 // Publish user.created event
-await messageBrokerService.publishUserCreated(user, correlationId, ipAddress, userAgent);
+await daprPublisher.publishUserCreated(user, correlationId, ipAddress, userAgent);
 ```
 
 **Event Format:**
+
 ```javascript
 {
   source: 'user-service',
@@ -68,6 +70,7 @@ await messageBrokerService.publishUserCreated(user, correlationId, ipAddress, us
 ```
 
 **Available Event Publishers:**
+
 - `publishUserCreated(user, correlationId, ipAddress, userAgent)`
 - `publishUserUpdated(user, correlationId, updatedBy, ipAddress, userAgent)`
 - `publishUserDeleted(userId, correlationId)`
@@ -75,13 +78,16 @@ await messageBrokerService.publishUserCreated(user, correlationId, ipAddress, us
 - `publishUserLoggedOut(userId, email, correlationId)`
 
 **❌ DON'T:**
+
 ```javascript
 import amqplib from 'amqplib'; // Never import message broker libraries directly
+import axios from 'axios'; // Don't use HTTP to publish events
 ```
 
 **✅ DO:**
+
 ```javascript
-import messageBrokerService from '../services/messageBrokerServiceClient.js';
+import daprPublisher from '../services/daprPublisher.js';
 ```
 
 ### 2. Controller Pattern
@@ -95,35 +101,30 @@ import logger from '../observability/index.js';
 
 export const createUser = asyncHandler(async (req, res, next) => {
   const { email, password, firstName, lastName } = req.body;
-  
+
   // 1. Validate input
   if (!email) {
     return next(new ErrorResponse('Email is required', 400, 'EMAIL_REQUIRED'));
   }
-  
+
   // 2. Business logic
   const user = await User.create({ email, password, firstName, lastName });
-  
+
   // 3. Publish event
-  await messageBrokerService.publishUserCreated(
-    user,
-    req.correlationId,
-    req.ip,
-    req.get('user-agent')
-  );
-  
+  await daprPublisher.publishUserCreated(user, req.correlationId, req.ip, req.get('user-agent'));
+
   // 4. Structured logging
   logger.info('User created successfully', null, {
     operation: 'create_user',
     userId: user._id.toString(),
-    correlationId: req.correlationId
+    correlationId: req.correlationId,
   });
-  
+
   // 5. Response
   res.status(201).json({
     success: true,
     message: 'User created successfully',
-    data: { userId: user._id, email: user.email }
+    data: { userId: user._id, email: user.email },
   });
 });
 ```
@@ -150,6 +151,7 @@ if (!passwordValidation.valid) {
 ### 4. Authentication & Authorization
 
 **JWT Validation Middleware:**
+
 ```javascript
 import { requireAuth, optionalAuth } from '../middlewares/auth.middleware.js';
 import { requireRole } from '../middlewares/role.middleware.js';
@@ -165,13 +167,14 @@ router.get('/public', optionalAuth, getPublicData);
 ```
 
 **Access User from JWT:**
+
 ```javascript
 export const getProfile = asyncHandler(async (req, res) => {
   // req.user is populated by requireAuth middleware
   const userId = req.user.userId; // from JWT payload
   const email = req.user.email;
   const roles = req.user.roles;
-  
+
   const user = await User.findById(userId);
   res.json({ success: true, data: user });
 });
@@ -188,11 +191,11 @@ Always use correlation ID for distributed tracing:
 logger.info('Processing request', null, {
   operation: 'update_user',
   userId: user._id,
-  correlationId: req.correlationId  // Include in all logs
+  correlationId: req.correlationId, // Include in all logs
 });
 
 // Pass to event publishing
-await messageBrokerService.publishUserUpdated(user, req.correlationId);
+await daprPublisher.publishUserUpdated(user, req.correlationId);
 ```
 
 ### 6. Structured Logging
@@ -207,7 +210,7 @@ logger.info('User created', null, {
   operation: 'create_user',
   userId: user._id.toString(),
   email: user.email,
-  correlationId: req.correlationId
+  correlationId: req.correlationId,
 });
 
 // Error logging
@@ -215,7 +218,7 @@ logger.error('Failed to create user', null, {
   operation: 'create_user',
   error: error.message,
   stack: error.stack,
-  correlationId: req.correlationId
+  correlationId: req.correlationId,
 });
 
 // Warning logging
@@ -223,17 +226,19 @@ logger.warn('Event publishing failed', null, {
   operation: 'publish_event',
   eventType: 'user.created',
   userId: user._id.toString(),
-  correlationId: req.correlationId
+  correlationId: req.correlationId,
 });
 ```
 
 **Log Levels:**
+
 - `ERROR`: Failures requiring immediate attention
 - `WARN`: Degraded functionality (e.g., event publishing failed but user created)
 - `INFO`: Normal operations (user created, updated, deleted)
 - `DEBUG`: Detailed diagnostic information
 
 **Never log sensitive data:**
+
 - ❌ Passwords (even hashed)
 - ❌ JWT tokens
 - ❌ Full credit card numbers (only last 4 digits)
@@ -266,6 +271,7 @@ return next(new ErrorResponse('Database error', 500, 'DATABASE_ERROR'));
 ```
 
 **Error Response Format:**
+
 ```json
 {
   "success": false,
@@ -285,10 +291,10 @@ import User from '../models/user.model.js';
 // Create user
 const user = await User.create({
   email: 'john@example.com',
-  password: 'SecurePass123',  // Auto-hashed by pre-save hook
+  password: 'SecurePass123', // Auto-hashed by pre-save hook
   firstName: 'John',
   lastName: 'Doe',
-  roles: ['customer']  // Default
+  roles: ['customer'], // Default
 });
 
 // Find by ID
@@ -316,7 +322,7 @@ user.addresses.push({
   city: 'New York',
   state: 'NY',
   postalCode: '10001',
-  country: 'USA'
+  country: 'USA',
 });
 await user.save();
 
@@ -326,13 +332,14 @@ await user.save();
 ```
 
 **Password Hashing:**
+
 ```javascript
 // Passwords are automatically hashed by pre-save hook in User model
 // NEVER manually hash passwords unless absolutely necessary
 
 const user = await User.create({
   email: 'john@example.com',
-  password: 'PlainTextPassword'  // Automatically hashed with bcrypt (cost: 12)
+  password: 'PlainTextPassword', // Automatically hashed with bcrypt (cost: 12)
 });
 
 // To verify password (done in auth-service)
@@ -342,25 +349,28 @@ const isMatch = await bcrypt.compare(candidatePassword, user.password);
 ### 9. API Response Format
 
 **Success Response:**
+
 ```javascript
 res.status(200).json({
   success: true,
-  message: 'User updated successfully',  // Optional
-  data: { userId, email, firstName }
+  message: 'User updated successfully', // Optional
+  data: { userId, email, firstName },
 });
 ```
 
 **Error Response:**
+
 ```javascript
 res.status(400).json({
   success: false,
   message: 'Validation failed',
   errorCode: 'VALIDATION_ERROR',
-  correlationId: req.correlationId
+  correlationId: req.correlationId,
 });
 ```
 
 **Paginated Response:**
+
 ```javascript
 res.status(200).json({
   success: true,
@@ -369,21 +379,22 @@ res.status(200).json({
     page: 1,
     pageSize: 20,
     totalCount: 150,
-    totalPages: 8
-  }
+    totalPages: 8,
+  },
 });
 ```
 
 ### 10. Testing
 
 **Unit Tests (Jest):**
+
 ```javascript
 import { createUser } from '../controllers/user.controller.js';
 import User from '../models/user.model.js';
-import messageBrokerService from '../services/messageBrokerServiceClient.js';
+import daprPublisher from '../services/daprPublisher.js';
 
 jest.mock('../models/user.model.js');
-jest.mock('../services/messageBrokerServiceClient.js');
+jest.mock('../services/daprPublisher.js');
 
 describe('createUser Controller', () => {
   it('should create user and publish event', async () => {
@@ -391,22 +402,23 @@ describe('createUser Controller', () => {
     const req = { body: { email: 'test@example.com', password: 'Pass123' } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     const next = jest.fn();
-    
+
     User.create.mockResolvedValue({ _id: 'user-123', email: 'test@example.com' });
-    messageBrokerService.publishUserCreated.mockResolvedValue({ success: true });
-    
+    daprPublisher.publishUserCreated.mockResolvedValue({ success: true });
+
     // Act
     await createUser(req, res, next);
-    
+
     // Assert
     expect(User.create).toHaveBeenCalledWith(expect.objectContaining({ email: 'test@example.com' }));
-    expect(messageBrokerService.publishUserCreated).toHaveBeenCalled();
+    expect(daprPublisher.publishUserCreated).toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(201);
   });
 });
 ```
 
 **Integration Tests:**
+
 ```javascript
 import request from 'supertest';
 import app from '../app.js';
@@ -417,7 +429,7 @@ describe('POST /users', () => {
       .post('/users')
       .send({ email: 'test@example.com', password: 'SecurePass123' })
       .expect(201);
-    
+
     expect(response.body.success).toBe(true);
     expect(response.body.data.email).toBe('test@example.com');
   });
@@ -431,23 +443,25 @@ describe('POST /users', () => {
 ### Adding a New Endpoint
 
 1. **Define route** in `src/routes/user.routes.js`:
+
 ```javascript
 router.post('/addresses', requireAuth, addAddress);
 ```
 
 2. **Create controller** in `src/controllers/user.controller.js`:
+
 ```javascript
 export const addAddress = asyncHandler(async (req, res, next) => {
   const userId = req.user.userId;
   const addressData = req.body;
-  
+
   // Validate, process, publish event
   const user = await User.findById(userId);
   user.addresses.push(addressData);
   await user.save();
-  
-  await messageBrokerService.publishUserUpdated(user, req.correlationId);
-  
+
+  await daprPublisher.publishUserUpdated(user, req.correlationId);
+
   res.status(200).json({ success: true, data: user.addresses });
 });
 ```
@@ -458,7 +472,8 @@ export const addAddress = asyncHandler(async (req, res, next) => {
 
 ### Publishing a New Event Type
 
-1. **Add event publisher** in `src/services/messageBrokerServiceClient.js`:
+1. **Add event publisher** in `src/services/daprPublisher.js`:
+
 ```javascript
 export async function publishUserEmailVerified(userId, email, correlationId) {
   const data = { userId, email, verifiedAt: new Date().toISOString() };
@@ -467,8 +482,9 @@ export async function publishUserEmailVerified(userId, email, correlationId) {
 ```
 
 2. **Use in controller**:
+
 ```javascript
-await messageBrokerService.publishUserEmailVerified(user._id, user.email, req.correlationId);
+await daprPublisher.publishUserEmailVerified(user._id, user.email, req.correlationId);
 ```
 
 3. **Document in PRD** (events section)
@@ -476,6 +492,7 @@ await messageBrokerService.publishUserEmailVerified(user._id, user.email, req.co
 ### Adding a New Sub-Schema
 
 1. **Create schema** in `src/schemas/`:
+
 ```javascript
 // loyaltyPoints.schema.js
 import mongoose from 'mongoose';
@@ -483,19 +500,20 @@ import mongoose from 'mongoose';
 const loyaltyPointsSchema = new mongoose.Schema({
   points: { type: Number, default: 0 },
   tier: { type: String, enum: ['bronze', 'silver', 'gold'], default: 'bronze' },
-  lastEarned: { type: Date }
+  lastEarned: { type: Date },
 });
 
 export default loyaltyPointsSchema;
 ```
 
 2. **Add to User model**:
+
 ```javascript
 import loyaltyPointsSchema from '../schemas/loyaltyPoints.schema.js';
 
 const userSchema = new mongoose.Schema({
   // ... existing fields
-  loyaltyPoints: loyaltyPointsSchema
+  loyaltyPoints: loyaltyPointsSchema,
 });
 ```
 
@@ -519,9 +537,11 @@ MONGODB_PASSWORD=
 MONGODB_DB_NAME=user-service-db
 MONGODB_DB_PARAMS=
 
-# Message Broker Service
-MESSAGE_BROKER_SERVICE_URL=http://localhost:4000
-MESSAGE_BROKER_API_KEY=dev-api-key-12345
+# Dapr Configuration
+DAPR_HOST=localhost
+DAPR_HTTP_PORT=3500
+PUBSUB_NAME=user-pubsub
+TOPIC_NAME=user.events
 
 # Logging
 LOG_LEVEL=info
@@ -538,14 +558,17 @@ OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
 ## Dependencies
 
 ### Internal Service Dependencies
-- **message-broker-service** (Port 4000): Event publishing gateway
+
+- **Dapr** (Port 3500): Sidecar for pub/sub event publishing to RabbitMQ
 
 ### Infrastructure Dependencies
+
 - **MongoDB** (Port 27017): Primary database
 
 ### No Dependencies On
+
 - ❌ auth-service (auth-service depends on user-service, not vice versa)
-- ❌ RabbitMQ/Kafka (abstracted by message-broker-service)
+- ❌ RabbitMQ/Kafka (abstracted by Dapr)
 - ❌ External APIs
 
 ---
@@ -553,23 +576,27 @@ OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
 ## Common Gotchas
 
 ### 1. Event Publishing Failures
+
 **Problem**: Event publishing fails but user operation succeeds  
 **Solution**: Graceful degradation - log warning, don't throw error
+
 ```javascript
-const publishResult = await messageBrokerService.publishUserCreated(user, correlationId);
+const publishResult = await daprPublisher.publishUserCreated(user, correlationId);
 if (!publishResult) {
   logger.warn('Event publishing failed, but user created successfully', {
     operation: 'create_user',
     userId: user._id,
-    correlationId
+    correlationId,
   });
 }
 // Continue - don't fail the request
 ```
 
 ### 2. Password Handling
+
 **Problem**: Accidentally logging or returning passwords  
-**Solution**: 
+**Solution**:
+
 - Use `.select('-password')` in queries
 - Password auto-hashed by pre-save hook
 - Never include password in responses
@@ -585,30 +612,36 @@ res.json({ data: user }); // Safe
 ```
 
 ### 3. Mongoose Schema Validation
+
 **Problem**: Validation errors not caught properly  
 **Solution**: Use `runValidators: true` in updates
+
 ```javascript
 await User.findByIdAndUpdate(
   userId,
   { email: 'newemail@example.com' },
-  { new: true, runValidators: true }  // ✅ Validates email format
+  { new: true, runValidators: true } // ✅ Validates email format
 );
 ```
 
 ### 4. Correlation ID Propagation
+
 **Problem**: Missing correlation ID in logs/events  
 **Solution**: Always pass `req.correlationId` to services/events
+
 ```javascript
 // DON'T
-await messageBrokerService.publishUserCreated(user);
+await daprPublisher.publishUserCreated(user);
 
 // DO
-await messageBrokerService.publishUserCreated(user, req.correlationId, req.ip, req.get('user-agent'));
+await daprPublisher.publishUserCreated(user, req.correlationId, req.ip, req.get('user-agent'));
 ```
 
 ### 5. JWT Dependency Confusion
+
 **Problem**: Thinking user-service validates JWTs  
 **Solution**: User-service RECEIVES pre-validated tokens from auth-service
+
 - JWT validation happens in auth-service
 - User-service receives `req.user` from auth middleware (already decoded)
 - User-service never calls auth-service APIs
@@ -618,24 +651,28 @@ await messageBrokerService.publishUserCreated(user, req.correlationId, req.ip, r
 ## Code Style & Best Practices
 
 ### Naming Conventions
+
 - **Files**: `camelCase.js` (e.g., `user.controller.js`)
 - **Functions**: `camelCase` (e.g., `createUser`)
-- **Constants**: `UPPER_SNAKE_CASE` (e.g., `MESSAGE_BROKER_SERVICE_URL`)
+- **Constants**: `UPPER_SNAKE_CASE` (e.g., `DAPR_HOST`, `PUBSUB_NAME`)
 - **Classes**: `PascalCase` (e.g., `ErrorResponse`)
 
 ### Async/Await
+
 - Always use `async/await` (no callbacks)
 - Use `asyncHandler` middleware for controllers
 - Handle errors with try/catch in services
 
 ### Imports
+
 ```javascript
 // ES6 modules (not CommonJS)
-import express from 'express';  // ✅
-const express = require('express');  // ❌
+import express from 'express'; // ✅
+const express = require('express'); // ❌
 ```
 
 ### Comments
+
 ```javascript
 // JSDoc for functions
 /**
@@ -654,14 +691,16 @@ export const createUser = asyncHandler(async (req, res, next) => {
 ## Health Checks & Observability
 
 ### Health Check Endpoints
+
 ```javascript
-GET /health          // Overall service health
-GET /health/ready    // Kubernetes readiness probe
-GET /health/live     // Kubernetes liveness probe
-GET /metrics         // Prometheus metrics
+GET / health; // Overall service health
+GET / health / ready; // Kubernetes readiness probe
+GET / health / live; // Kubernetes liveness probe
+GET / metrics; // Prometheus metrics
 ```
 
 ### Monitoring
+
 - Winston structured logs → stdout
 - OpenTelemetry tracing (optional)
 - Prometheus metrics (planned)
@@ -672,18 +711,21 @@ GET /metrics         // Prometheus metrics
 ## Deployment
 
 ### Docker
+
 ```bash
 docker build -t user-service:latest .
 docker run -p 5000:5000 --env-file .env user-service:latest
 ```
 
 ### Local Development
+
 ```bash
 npm install
 npm run dev  # nodemon with hot reload
 ```
 
 ### Testing
+
 ```bash
 npm test              # Run all tests
 npm run test:watch    # Watch mode
@@ -695,17 +737,19 @@ npm run test:coverage # Coverage report
 ## Quick Reference
 
 ### Most Used Imports
+
 ```javascript
 import ErrorResponse from '../utils/ErrorResponse.js';
 import logger from '../observability/index.js';
 import User from '../models/user.model.js';
 import asyncHandler from '../middlewares/asyncHandler.js';
-import messageBrokerService from '../services/messageBrokerServiceClient.js';
+import daprPublisher from '../services/daprPublisher.js';
 import { requireAuth, optionalAuth } from '../middlewares/auth.middleware.js';
 import { requireRole } from '../middlewares/role.middleware.js';
 ```
 
 ### Most Used Patterns
+
 ```javascript
 // 1. Controller with auth
 export const getProfile = asyncHandler(async (req, res) => {
@@ -716,11 +760,11 @@ export const getProfile = asyncHandler(async (req, res) => {
 
 // 2. Create with event
 const user = await User.create(userData);
-await messageBrokerService.publishUserCreated(user, req.correlationId);
+await daprPublisher.publishUserCreated(user, req.correlationId);
 
 // 3. Update with event
 const user = await User.findByIdAndUpdate(userId, updates, { new: true, runValidators: true });
-await messageBrokerService.publishUserUpdated(user, req.correlationId);
+await daprPublisher.publishUserUpdated(user, req.correlationId);
 
 // 4. Error handling
 if (!user) {
@@ -730,4 +774,550 @@ if (!user) {
 
 ---
 
-**Remember**: User-service is a **foundational service** - keep it simple, reliable, and focused on user data management. All event communication goes through message-broker-service, never directly to message brokers.
+## Requirements Mapping Table
+
+This table maps PRD requirements to implementation approaches. Use this when implementing features.
+
+| PRD Requirement               | ID      | Implementation Approach                                                       | Files Involved                                              |
+| ----------------------------- | ------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| **User Registration**         | REQ-1.1 | POST /users endpoint, bcrypt hashing, Mongoose validation, user.created event | `user.controller.js`, `user.model.js`, `daprPublisher.js`   |
+| **Profile Retrieval**         | REQ-1.2 | GET /users endpoint with JWT auth, .select('-password'), correlation ID       | `user.controller.js`, `auth.middleware.js`                  |
+| **Profile Update**            | REQ-2.1 | PATCH /users endpoint, partial updates, user.updated event, field whitelist   | `user.controller.js`, `user.service.js`                     |
+| **Add Address**               | REQ-3.1 | POST /users/addresses, embedded document, default flag logic                  | `user.controller.js`, `address.schema.js`                   |
+| **Update Address**            | REQ-3.2 | PATCH /users/addresses/:id, Mongoose subdocument update                       | `user.controller.js`                                        |
+| **Delete Address**            | REQ-3.3 | DELETE /users/addresses/:id, subdocument.remove()                             | `user.controller.js`                                        |
+| **List Addresses**            | REQ-3.4 | GET /users/addresses, return user.addresses array                             | `user.controller.js`                                        |
+| **Add Payment Method**        | REQ-4.1 | POST /users/paymentmethods, PCI-DSS compliance (last 4 digits only)           | `user.controller.js`, `payment.schema.js`                   |
+| **Update Payment Method**     | REQ-4.2 | PATCH /users/paymentmethods/:id, Mongoose subdocument update                  | `user.controller.js`                                        |
+| **Delete Payment Method**     | REQ-4.3 | DELETE /users/paymentmethods/:id, subdocument.remove()                        | `user.controller.js`                                        |
+| **Add to Wishlist**           | REQ-5.1 | POST /users/wishlist, duplicate prevention, timestamp                         | `user.controller.js`, `wishlist.schema.js`                  |
+| **Update Wishlist Item**      | REQ-5.2 | PATCH /users/wishlist/:id, update notes/metadata                              | `user.controller.js`                                        |
+| **Remove from Wishlist**      | REQ-5.3 | DELETE /users/wishlist/:id, subdocument.remove()                              | `user.controller.js`                                        |
+| **Update Preferences**        | REQ-6.1 | PATCH /users, nested object update for preferences                            | `user.controller.js`, `preferences.schema.js`               |
+| **Account Deactivation**      | REQ-7.1 | PATCH /users (set isActive: false), user.deactivated event                    | `user.controller.js`                                        |
+| **Account Deletion**          | REQ-8.1 | DELETE /users, user.deleted event, GDPR compliance                            | `user.controller.js`                                        |
+| **List Users (Admin)**        | REQ-9.1 | GET /admin/users with pagination, requireRole(['admin'])                      | `admin.controller.js`, `role.middleware.js`                 |
+| **User Statistics (Admin)**   | REQ-9.2 | GET /admin/users/stats, aggregation pipeline                                  | `admin.controller.js`                                       |
+| **Performance (< 100ms p95)** | NFR-1   | MongoDB indexes, field selection, connection pooling                          | `user.model.js`, `database/index.js`                        |
+| **Scalability (10M users)**   | NFR-2   | Stateless design, horizontal scaling, no in-memory state                      | All controllers, services                                   |
+| **Availability (99.9%)**      | NFR-3   | Health checks, graceful degradation, retry logic                              | `operational.controller.js`                                 |
+| **Security (JWT, RBAC)**      | NFR-4   | JWT validation, role middleware, password hashing                             | `auth.middleware.js`, `role.middleware.js`, `user.model.js` |
+| **Observability**             | NFR-5   | Winston structured logging, correlation ID, OpenTelemetry                     | `observability/index.js`, `correlationId.middleware.js`     |
+
+---
+
+## Common Copilot Prompts
+
+Use these prompts to accelerate development with GitHub Copilot.
+
+### Feature Implementation
+
+```
+"Read docs/PRD.md REQ-3.1 (Add Address).
+Implement POST /users/addresses endpoint following docs/ARCHITECTURE.md Controller-Service-Model pattern.
+Use .github/copilot-instructions.md embedded document pattern.
+Ensure address validation and default flag logic."
+```
+
+```
+"Read docs/PRD.md REQ-9.2 (User Statistics).
+Implement GET /admin/users/stats endpoint with MongoDB aggregation.
+Include: total users, active users, new registrations (7d/30d), growth trends.
+Use requireRole(['admin']) middleware."
+```
+
+### Event Publishing
+
+```
+"Add user.email_verified event publisher to daprPublisher.js.
+Follow existing publishUserCreated pattern.
+Include userId, email, verifiedAt in event data."
+```
+
+### Testing
+
+```
+"Generate Jest unit tests for createUser controller in user.controller.js.
+Mock User model, daprPublisher.
+Test cases: success (201), duplicate email (409), validation errors (400).
+Use .github/copilot-instructions.md testing patterns."
+```
+
+### Migration/Refactoring
+
+```
+"Refactor user.controller.js to extract business logic into user.service.js.
+Follow docs/ARCHITECTURE.md Service Layer pattern.
+Move event publishing, validation, and user creation logic to service."
+```
+
+### Code Review
+
+```
+"Review this PR against:
+1. docs/PRD.md requirements (REQ-3.x)
+2. docs/ARCHITECTURE.md patterns
+3. .github/copilot-instructions.md conventions
+Check: error handling, logging, event publishing, tests."
+```
+
+---
+
+## Docker Compose Configuration
+
+**File**: `docker-compose.yml`
+
+```yaml
+version: '3.8'
+
+services:
+  user-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - '5000:5000'
+    environment:
+      - NODE_ENV=development
+      - PORT=5000
+      - MONGODB_HOST=mongodb
+      - MONGODB_PORT=27017
+      - MONGODB_DB_NAME=user-service-db
+      - DAPR_HOST=localhost
+      - DAPR_HTTP_PORT=3500
+      - PUBSUB_NAME=user-pubsub
+      - TOPIC_NAME=user.events
+      - LOG_LEVEL=debug
+    depends_on:
+      - mongodb
+      - dapr-sidecar
+    networks:
+      - aioutlet-network
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:5000/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  dapr-sidecar:
+    image: daprio/daprd:latest
+    command:
+      [
+        './daprd',
+        '-app-id',
+        'user-service',
+        '-app-port',
+        '5000',
+        '-dapr-http-port',
+        '3500',
+        '-components-path',
+        '/components',
+      ]
+    volumes:
+      - ./components:/components
+    depends_on:
+      - rabbitmq
+    networks:
+      - aioutlet-network
+
+  mongodb:
+    image: mongo:8.0
+    ports:
+      - '27017:27017'
+    environment:
+      - MONGO_INITDB_DATABASE=user-service-db
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - aioutlet-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    networks:
+      - aioutlet-network
+
+networks:
+  aioutlet-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+```
+
+---
+
+## Environment Setup for Development
+
+### 1. Clone and Install
+
+```bash
+git clone https://github.com/aioutlet/user-service.git
+cd user-service
+npm install
+```
+
+### 2. Configure Environment
+
+Create `.env` file:
+
+```env
+# Server
+PORT=5000
+NODE_ENV=development
+
+# MongoDB
+MONGODB_CONNECTION_SCHEME=mongodb
+MONGODB_HOST=localhost
+MONGODB_PORT=27017
+MONGODB_DB_NAME=user-service-db
+
+# Dapr Configuration
+DAPR_HOST=localhost
+DAPR_HTTP_PORT=3500
+PUBSUB_NAME=user-pubsub
+TOPIC_NAME=user.events
+
+# Logging
+LOG_LEVEL=debug
+LOG_TO_CONSOLE=true
+LOG_TO_FILE=false
+```
+
+### 3. Start Dependencies
+
+```bash
+# Start MongoDB
+docker run -d -p 27017:27017 --name mongodb mongo:8.0
+
+# Start RabbitMQ (for Dapr pub/sub backend)
+docker run -d -p 5672:5672 -p 15672:15672 --name rabbitmq rabbitmq:3-management
+
+# Start Dapr sidecar (separate terminal)
+dapr run --app-id user-service --app-port 5000 --dapr-http-port 3500 --components-path ./components
+```
+
+### 4. Run User Service
+
+```bash
+npm run dev  # Starts with nodemon (auto-reload)
+```
+
+### 5. Verify Setup
+
+```bash
+curl http://localhost:5000/health
+# Expected: { "status": "healthy", ... }
+
+curl http://localhost:5000/version
+# Expected: { "version": "1.0.0", ... }
+```
+
+### 6. Run Tests
+
+```bash
+npm test              # Run all tests
+npm run test:watch    # Watch mode
+npm run test:coverage # Coverage report
+```
+
+### 7. Database Seeding (Optional)
+
+```bash
+npm run seed    # Seed test users
+npm run clear   # Clear database
+```
+
+---
+
+## Advanced Patterns
+
+### Pagination Helper
+
+```javascript
+// src/utils/pagination.js
+export function paginateResults(query, page = 1, pageSize = 20) {
+  const skip = (page - 1) * pageSize;
+  return query.skip(skip).limit(pageSize);
+}
+
+// Usage in controller
+const users = await paginateResults(User.find({ isActive: true }), req.query.page, req.query.pageSize).sort({
+  createdAt: -1,
+});
+```
+
+### Transaction Support (MongoDB 4.0+)
+
+```javascript
+// For multi-document operations
+const session = await mongoose.startSession();
+session.startTransaction();
+
+try {
+  const user = await User.create([{ email, password }], { session });
+  const auditLog = await AuditLog.create([{ userId: user._id, action: 'created' }], { session });
+
+  await session.commitTransaction();
+} catch (error) {
+  await session.abortTransaction();
+  throw error;
+} finally {
+  session.endSession();
+}
+```
+
+### Soft Delete Pattern
+
+```javascript
+// Instead of hard delete
+await User.findByIdAndUpdate(userId, {
+  isDeleted: true,
+  deletedAt: new Date(),
+  deletedBy: req.user.userId
+});
+
+// Add to User schema
+deletedAt: { type: Date, default: null },
+isDeleted: { type: Boolean, default: false }
+
+// Add index
+userSchema.index({ isDeleted: 1 });
+
+// Modify all queries to filter deleted
+User.find({ isDeleted: false });
+```
+
+### Bulk Operations (Admin)
+
+```javascript
+// Bulk user creation
+export const bulkCreateUsers = asyncHandler(async (req, res) => {
+  const { users } = req.body; // Array of user objects
+
+  const createdUsers = await User.insertMany(users, {
+    ordered: false, // Continue on error
+  });
+
+  // Publish events for each user
+  for (const user of createdUsers) {
+    await daprPublisher.publishUserCreated(user, req.correlationId);
+  }
+
+  res.status(201).json({
+    success: true,
+    message: `${createdUsers.length} users created`,
+    data: { count: createdUsers.length },
+  });
+});
+```
+
+---
+
+## Performance Tips
+
+### 1. Index Strategy
+
+```javascript
+// Create compound indexes for common queries
+userSchema.index({ email: 1, isActive: 1 });
+userSchema.index({ roles: 1, isActive: 1 });
+userSchema.index({ createdAt: -1, isActive: 1 });
+
+// Text index for search (future)
+userSchema.index({ email: 'text', firstName: 'text', lastName: 'text' });
+```
+
+### 2. Field Projection
+
+```javascript
+// Only select needed fields
+const users = await User.find().select('email firstName lastName roles').lean(); // Convert to plain JS object (faster)
+```
+
+### 3. Lean Queries
+
+```javascript
+// When you don't need Mongoose document methods
+const users = await User.find().lean(); // 5-10x faster
+```
+
+### 4. Connection Pooling
+
+```javascript
+// In database/index.js
+mongoose.connect(MONGODB_URI, {
+  maxPoolSize: 10, // Max connections
+  minPoolSize: 2, // Min connections
+  maxIdleTimeMS: 30000, // Close idle connections after 30s
+  serverSelectionTimeoutMS: 5000,
+});
+```
+
+### 5. Query Caching (Future - Redis)
+
+```javascript
+// Cache frequently accessed data
+const cacheKey = `user:${userId}`;
+const cached = await redis.get(cacheKey);
+
+if (cached) {
+  return JSON.parse(cached);
+}
+
+const user = await User.findById(userId);
+await redis.setex(cacheKey, 300, JSON.stringify(user)); // 5 min TTL
+return user;
+```
+
+---
+
+## Security Best Practices
+
+### 1. Password Hashing
+
+```javascript
+// NEVER store plain text passwords
+// Pre-save hook handles this automatically
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
+  this.password = await bcrypt.hash(this.password, 12); // Cost factor: 12
+  next();
+});
+```
+
+### 2. PII Redaction in Logs
+
+```javascript
+// NEVER log sensitive data
+logger.info('User created', null, {
+  userId: user._id,
+  email: user.email, // OK - business identifier
+  // password: user.password  ❌ NEVER
+  // creditCard: payment.cardNumber  ❌ NEVER
+  correlationId: req.correlationId,
+});
+```
+
+### 3. Input Sanitization
+
+```javascript
+// Sanitize user input to prevent injection
+import mongoSanitize from 'express-mongo-sanitize';
+
+app.use(mongoSanitize()); // Remove $ and . from user input
+```
+
+### 4. Rate Limiting
+
+```javascript
+import rateLimit from 'express-rate-limit';
+
+const createAccountLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 requests per window
+  message: 'Too many accounts created, please try again later',
+});
+
+router.post('/users', createAccountLimiter, createUser);
+```
+
+### 5. CORS Configuration
+
+```javascript
+import cors from 'cors';
+
+app.use(
+  cors({
+    origin: process.env.ALLOWED_ORIGINS.split(','),
+    credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Correlation-ID'],
+  })
+);
+```
+
+---
+
+## Troubleshooting Guide
+
+### Issue: MongoDB Connection Failed
+
+**Symptoms**: Service crashes on startup with "MongoNetworkError"
+
+**Solution**:
+
+```bash
+# Check MongoDB is running
+docker ps | grep mongo
+
+# Check connection string
+echo $MONGODB_HOST
+
+# Test connection manually
+mongosh mongodb://localhost:27017/user-service-db
+```
+
+### Issue: Event Publishing Fails
+
+**Symptoms**: "Failed to publish event" in logs, but operation succeeds
+
+**Solution**: This is expected (graceful degradation). Check Dapr sidecar:
+
+```bash
+curl http://localhost:3500/v1.0/healthz
+```
+
+### Issue: JWT Validation Fails
+
+**Symptoms**: 401 Unauthorized on authenticated endpoints
+
+**Solution**:
+
+```bash
+# Decode JWT to check payload
+jwt decode <token>
+
+# Verify JWT has userId, email, roles fields
+# Ensure auth-service is issuing correct JWT format
+```
+
+### Issue: Duplicate Email Error (409) When It Shouldn't Exist
+
+**Symptoms**: POST /users returns 409 for new email
+
+**Solution**:
+
+```bash
+# Check for orphaned user
+mongosh
+use user-service-db
+db.users.findOne({ email: "problematic@email.com" })
+
+# If found and shouldn't exist, delete it
+db.users.deleteOne({ email: "problematic@email.com" })
+```
+
+### Issue: Slow Queries
+
+**Symptoms**: Response time > 200ms consistently
+
+**Solution**:
+
+```javascript
+// Enable Mongoose debug mode
+mongoose.set('debug', true);
+
+// Check indexes
+db.users.getIndexes();
+
+// Add missing indexes
+userSchema.index({ isActive: 1, createdAt: -1 });
+```
+
+---
+
+**Remember**: User-service is a **foundational service** - keep it simple, reliable, and focused on user data management. All event communication goes through Dapr Pub/Sub, never directly to message brokers.

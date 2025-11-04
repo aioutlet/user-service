@@ -9,7 +9,84 @@
 
 ---
 
-## 1. Executive Summary
+## Table of Contents
+
+1. [Product Overview](#1-product-overview)
+   - 1.1 [Product Vision](#11-product-vision)
+   - 1.2 [Business Objectives](#12-business-objectives)
+   - 1.3 [Success Metrics](#13-success-metrics)
+   - 1.4 [Product Description](#14-product-description)
+   - 1.5 [Target Users](#15-target-users)
+   - 1.6 [Key Features](#16-key-features)
+2. [Technical Architecture](#2-technical-architecture)
+   - 2.1 [Technology Stack](#21-technology-stack)
+   - 2.2 [Architecture Pattern](#22-architecture-pattern)
+   - 2.3 [Data Model](#23-data-model)
+   - 2.4 [Event Schema](#24-event-schema)
+   - 2.5 [Database Indexes](#25-database-indexes)
+3. [API Specifications](#3-api-specifications)
+   - 3.1 [Authentication](#31-authentication)
+   - 3.2 [User Management APIs](#32-user-management-apis)
+   - 3.3 [Address Management APIs](#33-address-management-apis)
+   - 3.4 [Payment Method APIs](#34-payment-method-apis)
+   - 3.5 [Wishlist APIs](#35-wishlist-apis)
+   - 3.6 [Preference APIs](#36-preference-apis)
+   - 3.7 [Admin APIs](#37-admin-apis)
+   - 3.8 [Health Check APIs](#38-health-check-apis)
+4. [Functional Requirements](#4-functional-requirements)
+   - 4.1 [User Registration](#41-user-registration)
+   - 4.2 [Profile Management](#42-profile-management)
+   - 4.3 [Address Management](#43-address-management)
+   - 4.4 [Payment Method Management](#44-payment-method-management)
+   - 4.5 [Wishlist Management](#45-wishlist-management)
+   - 4.6 [Preference Management](#46-preference-management)
+   - 4.7 [Account Status Management](#47-account-status-management)
+   - 4.8 [Admin Operations](#48-admin-operations)
+5. [Non-Functional Requirements](#5-non-functional-requirements)
+   - 5.1 [Performance](#51-performance)
+   - 5.2 [Scalability](#52-scalability)
+   - 5.3 [Availability](#53-availability)
+   - 5.4 [Security](#54-security)
+   - 5.5 [Data Privacy](#55-data-privacy)
+   - 5.6 [Observability](#56-observability)
+   - 5.7 [Error Handling](#57-error-handling)
+6. [Dependencies](#6-dependencies)
+   - 6.1 [External Services](#61-external-services)
+   - 6.2 [Infrastructure](#62-infrastructure)
+   - 6.3 [Development Dependencies](#63-development-dependencies)
+7. [Testing Strategy](#7-testing-strategy)
+   - 7.1 [Unit Testing](#71-unit-testing)
+   - 7.2 [Integration Testing](#72-integration-testing)
+   - 7.3 [E2E Testing](#73-e2e-testing)
+   - 7.4 [Performance Testing](#74-performance-testing)
+   - 7.5 [Security Testing](#75-security-testing)
+8. [Deployment](#8-deployment)
+   - 8.1 [Environment Configuration](#81-environment-configuration)
+   - 8.2 [Docker Configuration](#82-docker-configuration)
+   - 8.3 [Kubernetes Deployment](#83-kubernetes-deployment)
+   - 8.4 [CI/CD Pipeline](#84-cicd-pipeline)
+9. [Monitoring & Alerts](#9-monitoring--alerts)
+   - 9.1 [Metrics](#91-metrics)
+   - 9.2 [Alerts](#92-alerts)
+   - 9.3 [Dashboards](#93-dashboards)
+10. [Risks & Mitigations](#10-risks--mitigations)
+11. [Compliance & Legal](#11-compliance--legal)
+    - 11.1 [GDPR Compliance](#111-gdpr-compliance)
+    - 11.2 [PCI-DSS Compliance (Payment Methods)](#112-pci-dss-compliance-payment-methods)
+    - 11.3 [Data Privacy](#113-data-privacy)
+12. [Documentation References](#12-documentation-references)
+    - 12.1 [Developer Documentation](#121-developer-documentation)
+    - 12.2 [Runbooks](#122-runbooks)
+    - 12.3 [API Documentation](#123-api-documentation)
+13. [Approval & Sign-off](#13-approval--sign-off)
+14. [Revision History](#14-revision-history)
+15. [Appendix](#15-appendix)
+    - 15.1 [Glossary](#151-glossary)
+    - 15.2 [References](#152-references)
+
+---
+
+## 1. Product Overview
 
 ### 1.1 Product Vision
 
@@ -33,21 +110,17 @@ The User Service is a core microservice within the AIOutlet e-commerce platform,
 | Profile Update Success Rate    | > 99%   | TBD     |
 | API Error Rate                 | < 0.5%  | TBD     |
 
----
+### 1.4 Product Description
 
-## 2. Product Overview
+The User Service is a Node.js/Express microservice that manages user accounts, profiles, addresses, payment methods, wishlists, and preferences. It follows the **Pure Publisher** pattern, publishing events via Dapr Pub/Sub (with RabbitMQ backend) for decoupled communication with other microservices.
 
-### 2.1 Product Description
-
-The User Service is a Node.js/Express microservice that manages user accounts, profiles, addresses, payment methods, wishlists, and preferences. It follows the **Pure Publisher** pattern, publishing events via HTTP to the message-broker-service for decoupled communication with other microservices.
-
-### 2.2 Target Users
+### 1.5 Target Users
 
 1. **Customers**: End-users creating accounts and managing their profiles
 2. **Admin Users**: Platform administrators managing user accounts and support operations
 3. **Internal Services**: Other microservices (auth, order, notification) consuming user data
 
-### 2.3 Key Features
+### 1.6 Key Features
 
 - ✅ User profile management (CRUD operations)
 - ✅ Address management (multiple shipping/billing addresses)
@@ -61,7 +134,7 @@ The User Service is a Node.js/Express microservice that manages user accounts, p
 
 ---
 
-## 3. Technical Architecture
+## 2. Technical Architecture
 
 ### 3.1 Technology Stack
 
@@ -179,7 +252,7 @@ The User Service is a Node.js/Express microservice that manages user accounts, p
 
 ### 3.4 Event Publishing
 
-The service publishes the following events to message-broker-service:
+The service publishes the following events via Dapr Pub/Sub:
 
 | Event Type         | Trigger              | Payload                                  |
 | ------------------ | -------------------- | ---------------------------------------- |
@@ -474,7 +547,9 @@ All errors follow a standardized format:
 
 ## 5. Functional Requirements
 
-### 5.1 User Registration (FR-001)
+### REQ-1: User Registration & Authentication
+
+#### REQ-1.1 User Registration (FR-001)
 
 **Priority:** P0 (Critical)  
 **Description:** Users can create accounts with email and password.
@@ -482,59 +557,164 @@ All errors follow a standardized format:
 **Acceptance Criteria:**
 
 - ✅ Email must be unique across the system
-- ✅ Password must be at least 6 characters
+- ✅ Password must be at least 6 characters (recommended 8+)
 - ✅ Password is hashed using bcrypt (cost factor: 12)
 - ✅ Default role is 'customer'
 - ✅ `user.created` event published to message broker
 - ✅ Returns 201 Created with user data (excluding password)
 - ✅ Correlation ID propagated for distributed tracing
+- ✅ Account created with isActive: true, isEmailVerified: false
+- ✅ createdBy field set to 'SELF_REGISTRATION'
 
 **Validation Rules:**
 
-- Email: Valid format, max 255 characters
-- Password: 6-100 characters
-- First Name: Optional, max 50 characters
-- Last Name: Optional, max 50 characters
-- Phone Number: Optional, max 20 characters
+- **Email**: Valid RFC 5322 format, unique, max 255 characters, case-insensitive
+- **Password**: 6-100 characters, no specific complexity requirements (UX consideration)
+- **First Name**: Optional, max 50 characters, letters only
+- **Last Name**: Optional, max 50 characters, letters only
+- **Phone Number**: Optional, E.164 format, max 20 characters
 
-### 5.2 Profile Management (FR-002)
+**Error Cases:**
+
+- Email already exists → 409 Conflict, errorCode: EMAIL_EXISTS
+- Invalid email format → 400 Bad Request, errorCode: INVALID_EMAIL
+- Password too short → 400 Bad Request, errorCode: PASSWORD_TOO_SHORT
+- Message broker unavailable → Log warning, continue (graceful degradation)
+
+#### REQ-1.2 Profile Retrieval (FR-002)
 
 **Priority:** P0 (Critical)  
-**Description:** Users can view and update their profiles.
+**Description:** Users can view their own profile data.
 
 **Acceptance Criteria:**
 
-- ✅ Authenticated users can view their profile
-- ✅ Users can update: firstName, lastName, phoneNumber, preferences
-- ✅ Email cannot be changed (separate verification flow)
-- ✅ Password change requires current password (handled by auth-service)
-- ✅ `user.updated` event published on changes
-- ✅ Returns updated user data
+- ✅ Authenticated users can GET /users endpoint
+- ✅ Returns full profile including: basic info, addresses, payment methods (masked), wishlist, preferences
+- ✅ Password field excluded from response (security)
+- ✅ Correlation ID included in logs
+- ✅ Response time < 100ms (p95)
 
-### 5.3 Address Management (FR-003)
+**Security:**
+
+- Requires valid JWT token
+- Users can only access their own profile
+- Admins can access any profile via /admin/users/:id
+
+**Error Cases:**
+
+- No JWT token → 401 Unauthorized
+- Invalid/expired JWT → 401 Unauthorized
+- User not found → 404 Not Found
+
+### REQ-2: Profile Management
+
+#### REQ-2.1 Profile Update (FR-003)
+
+**Priority:** P0 (Critical)  
+**Description:** Users can update their profile information.
+
+**Acceptance Criteria:**
+
+- ✅ Authenticated users can update: firstName, lastName, phoneNumber, preferences
+- ✅ Email cannot be changed via this endpoint (separate verification flow)
+- ✅ Password change handled by auth-service (not user-service)
+- ✅ `user.updated` event published on successful update
+- ✅ Returns updated user data with updatedAt timestamp
+- ✅ updatedBy field populated with user ID
+- ✅ Partial updates supported (PATCH semantics)
+
+**Validation:**
+
+- Only allow updates to whitelisted fields
+- Validate format of phoneNumber if provided
+- Validate preferences enum values
+
+**Error Cases:**
+
+- Attempt to update email → 400 Bad Request, errorCode: FIELD_NOT_UPDATABLE
+- Invalid phone format → 400 Bad Request, errorCode: INVALID_PHONE
+- Message broker failure → Log warning, continue (graceful degradation)
+
+### REQ-3: Address Management
+
+#### REQ-3.1 Add Address (FR-004)
 
 **Priority:** P1 (High)  
-**Description:** Users can manage multiple shipping and billing addresses.
+**Description:** Users can add shipping and billing addresses.
 
 **Acceptance Criteria:**
 
-- ✅ Users can add unlimited addresses
-- ✅ Each address has type (shipping/billing)
+- ✅ Users can add multiple addresses (no limit)
+- ✅ Each address has type: 'shipping' or 'billing'
 - ✅ One address can be marked as default per type
-- ✅ Users can update/remove addresses
-- ✅ Address validation (required fields)
-- ✅ Returns address list or specific address
+- ✅ When setting new default, previous default for that type is unmarked
+- ✅ Address stored as embedded document in user collection
+- ✅ Returns 200 OK with address object including generated addressId
+- ✅ Validates all required fields before saving
 
 **Validation Rules:**
 
-- Type: Required, enum ['shipping', 'billing']
-- Full Name: Required, max 100 characters
-- Address Line 1: Required, max 200 characters
-- City: Required, max 100 characters
-- Postal Code: Required, max 20 characters
-- Country: Required, max 100 characters
+- **Type**: Required, enum ['shipping', 'billing']
+- **Full Name**: Required, 1-100 characters, letters/spaces only
+- **Address Line 1**: Required, 1-200 characters
+- **Address Line 2**: Optional, max 200 characters
+- **City**: Required, 1-100 characters, letters/spaces only
+- **State/Province**: Required, max 100 characters
+- **Postal Code**: Required, max 20 characters, alphanumeric+dash
+- **Country**: Required, max 100 characters
+- **Phone Number**: Optional, E.164 format
 
-### 5.4 Payment Method Management (FR-004)
+**Error Cases:**
+
+- Missing required field → 400 Bad Request, errorCode: MISSING_FIELD
+- Invalid field format → 400 Bad Request, errorCode: INVALID_FORMAT
+- User not found → 404 Not Found
+
+#### REQ-3.2 Update Address (FR-005)
+
+**Priority:** P1 (High)  
+**Description:** Users can update existing addresses.
+
+**Acceptance Criteria:**
+
+- ✅ Users can update any field of their addresses
+- ✅ Address identified by addressId
+- ✅ Partial updates supported
+- ✅ Returns updated address object
+- ✅ Validates updated fields
+
+**Error Cases:**
+
+- Address not found → 404 Not Found, errorCode: ADDRESS_NOT_FOUND
+- Invalid address ID format → 400 Bad Request
+
+#### REQ-3.3 Delete Address (FR-006)
+
+**Priority:** P1 (High)  
+**Description:** Users can remove addresses.
+
+**Acceptance Criteria:**
+
+- ✅ Address removed from user's addresses array
+- ✅ Returns 200 OK with success message
+- ✅ If default address deleted, no new default set automatically
+
+**Error Cases:**
+
+- Address not found → 404 Not Found, errorCode: ADDRESS_NOT_FOUND
+
+#### REQ-3.4 List Addresses (FR-007)
+
+**Priority:** P1 (High)  
+**Description:** Users can retrieve all their addresses.
+
+**Acceptance Criteria:**
+
+- ✅ Returns array of all user addresses
+- ✅ Includes addressId, type, isDefault flag
+- ✅ Empty array if no addresses
+
+### REQ-4: Payment Method Management
 
 **Priority:** P1 (High)  
 **Description:** Users can manage payment methods for checkout.
@@ -739,9 +919,9 @@ All errors follow a standardized format:
 
 ### 7.1 Internal Service Dependencies
 
-| Service                | Purpose                  | Communication | Critical |
-| ---------------------- | ------------------------ | ------------- | -------- |
-| message-broker-service | Event publishing gateway | HTTP POST     | Yes      |
+| Service        | Purpose                      | Communication         | Critical |
+| -------------- | ---------------------------- | --------------------- | -------- |
+| Dapr (Sidecar) | Event publishing via Pub/Sub | Dapr SDK (@dapr/dapr) | Yes      |
 
 ### 7.2 External Service Dependencies
 
@@ -753,11 +933,12 @@ All errors follow a standardized format:
 
 ### 7.3 Infrastructure Dependencies
 
-| Component | Purpose          | Technology     | Configuration        | Critical |
-| --------- | ---------------- | -------------- | -------------------- | -------- |
-| MongoDB   | Primary database | MongoDB 8.18.0 | Replica set, 3 nodes | Yes      |
+| Component | Purpose                         | Technology     | Configuration        | Critical |
+| --------- | ------------------------------- | -------------- | -------------------- | -------- |
+| MongoDB   | Primary database                | MongoDB 8.18.0 | Replica set, 3 nodes | Yes      |
+| RabbitMQ  | Message broker backend for Dapr | RabbitMQ 3.x   | Pub/Sub component    | Yes      |
 
-**Note:** User-service does NOT have direct dependency on the message broker infrastructure (RabbitMQ/Kafka/Azure Service Bus). It communicates via HTTP with the message-broker-service gateway, which abstracts the underlying message broker implementation.
+**Note:** User-service uses Dapr Pub/Sub abstraction layer with RabbitMQ as the backend message broker. The service communicates with Dapr sidecar via the @dapr/dapr SDK.
 
 ### 7.4 Service Integration Map
 
@@ -773,7 +954,7 @@ All errors follow a standardized format:
        │
        ▼
 ┌──────────────────────┐
-│ message-broker-service│────► Routes events to consumers
+│ Dapr Pub/Sub         │────► RabbitMQ backend
 └──────────────────────┘
        │
        ▼
@@ -785,7 +966,7 @@ All errors follow a standardized format:
 **Dependency Flow:**
 
 - **auth-service → user-service**: Auth service calls `/users/findByEmail` for authentication
-- **user-service → message-broker-service**: Publishes user lifecycle events
+- **user-service → Dapr → RabbitMQ**: Publishes user lifecycle events via Dapr Pub/Sub
 - **user-service → notification-service** (via events): Triggers welcome emails, notifications
 - **user-service → audit-service** (via events): Logs user actions for compliance
 
@@ -873,9 +1054,9 @@ All errors follow a standardized format:
 
 ---
 
-## 9. Deployment
+## 8. Deployment
 
-### 9.1 Environment Configuration
+### 8.1 Environment Configuration
 
 | Environment | Purpose                | Database                    | Replicas |
 | ----------- | ---------------------- | --------------------------- | -------- |
@@ -899,9 +1080,11 @@ MONGODB_PASSWORD=<encrypted>
 MONGODB_DB_NAME=user-service-db
 MONGODB_DB_PARAMS=retryWrites=true&w=majority
 
-# Message Broker
-MESSAGE_BROKER_SERVICE_URL=http://message-broker-service:4000
-MESSAGE_BROKER_API_KEY=<encrypted>
+# Dapr Configuration
+DAPR_HOST=localhost
+DAPR_HTTP_PORT=3500
+PUBSUB_NAME=user-pubsub
+TOPIC_NAME=user.events
 
 # Observability
 LOG_LEVEL=info
@@ -943,12 +1126,30 @@ services:
       - MONGODB_HOST=mongodb
     depends_on:
       - mongodb
-      - message-broker-service
+      - dapr-sidecar
+      - rabbitmq
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:5000/health']
       interval: 10s
       timeout: 3s
       retries: 3
+
+  dapr-sidecar:
+    image: daprio/daprd:latest
+    command:
+      [
+        './daprd',
+        '-app-id',
+        'user-service',
+        '-app-port',
+        '5000',
+        '-dapr-http-port',
+        '3500',
+        '-components-path',
+        '/components',
+      ]
+    depends_on:
+      - rabbitmq
 ```
 
 ### 9.4 Kubernetes Deployment
@@ -1054,9 +1255,9 @@ jobs:
 
 ---
 
-## 10. Monitoring & Alerts
+## 9. Monitoring & Alerts
 
-### 10.1 Key Metrics
+### 9.1 Key Metrics
 
 | Metric               | Warning | Critical | Action                     |
 | -------------------- | ------- | -------- | -------------------------- |
@@ -1082,7 +1283,7 @@ jobs:
 - Warning-level alerts
 - Test failure notifications
 
-### 10.3 Dashboards
+### 9.3 Dashboards
 
 **Grafana Dashboard:**
 
@@ -1095,35 +1296,7 @@ jobs:
 
 ---
 
-## 11. Future Enhancements
-
-### 11.1 Phase 2 Features (Q1 2026)
-
-- [ ] Email verification flow
-- [ ] Two-factor authentication (2FA)
-- [ ] Social login (Google, Facebook, Twitter)
-- [ ] User avatar upload (S3/Azure Blob)
-- [ ] Account recovery flow
-
-### 11.2 Phase 3 Features (Q2 2026)
-
-- [ ] User activity history
-- [ ] Notification preferences management
-- [ ] Privacy settings (data export, deletion requests)
-- [ ] Loyalty program integration
-- [ ] Referral system
-
-### 11.3 Technical Improvements
-
-- [ ] GraphQL API support
-- [ ] Redis caching for user profiles
-- [ ] Elasticsearch for user search
-- [ ] CDC (Change Data Capture) for real-time sync
-- [ ] Multi-region deployment
-
----
-
-## 12. Risks & Mitigations
+## 10. Risks & Mitigations
 
 | Risk                       | Impact   | Probability | Mitigation                                       |
 | -------------------------- | -------- | ----------- | ------------------------------------------------ |
@@ -1136,9 +1309,9 @@ jobs:
 
 ---
 
-## 13. Compliance & Legal
+## 11. Compliance & Legal
 
-### 13.1 GDPR Compliance
+### 11.1 GDPR Compliance
 
 - ✅ Right to access: Users can export their data
 - ✅ Right to erasure: Users can delete their accounts
@@ -1147,7 +1320,7 @@ jobs:
 - ✅ Consent management: Email/SMS preferences
 - ✅ Data retention: 30-day grace period after deletion
 
-### 13.2 PCI-DSS Compliance (Payment Methods)
+### 11.2 PCI-DSS Compliance (Payment Methods)
 
 - ✅ No full card numbers stored (last 4 digits only)
 - ✅ No CVV storage
@@ -1155,7 +1328,7 @@ jobs:
 - ✅ Encrypted data in transit (HTTPS)
 - ✅ Encrypted data at rest (MongoDB encryption)
 
-### 13.3 Data Privacy
+### 11.3 Data Privacy
 
 - Password hashing (bcrypt, cost 12)
 - PII redaction in logs
@@ -1165,22 +1338,22 @@ jobs:
 
 ---
 
-## 14. Documentation
+## 12. Documentation References
 
-### 14.1 Developer Documentation
+### 12.1 Developer Documentation
 
 - [README.md](README.md) - Getting started guide
 - [API.md](API.md) - API reference (to be created)
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Technical architecture (to be created)
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines (to be created)
 
-### 14.2 Runbooks
+### 12.2 Runbooks
 
 - [Deployment Runbook](runbooks/deployment.md) - Deployment procedures (to be created)
 - [Incident Response Runbook](runbooks/incident-response.md) - Incident handling (to be created)
 - [Monitoring Runbook](runbooks/monitoring.md) - Monitoring setup (to be created)
 
-### 14.3 API Documentation
+### 12.3 API Documentation
 
 - Swagger/OpenAPI spec (to be generated)
 - Postman collection (to be created)
@@ -1188,7 +1361,7 @@ jobs:
 
 ---
 
-## 15. Approval & Sign-off
+## 13. Approval & Sign-off
 
 | Role             | Name | Signature | Date |
 | ---------------- | ---- | --------- | ---- |
@@ -1199,17 +1372,18 @@ jobs:
 
 ---
 
-## 16. Revision History
+## 14. Revision History
 
-| Version | Date       | Author        | Changes              |
-| ------- | ---------- | ------------- | -------------------- |
-| 1.0     | 2025-10-24 | AIOutlet Team | Initial PRD creation |
+| Version | Date       | Author        | Changes                                        |
+| ------- | ---------- | ------------- | ---------------------------------------------- |
+| 1.0     | 2025-10-24 | AIOutlet Team | Initial PRD creation                           |
+| 1.1     | 2025-01-XX | AIOutlet Team | Added Future Enhancements section (Section 13) |
 
 ---
 
-## 17. Appendix
+## 15. Appendix
 
-### 17.1 Glossary
+### 15.1 Glossary
 
 - **JWT**: JSON Web Token (authentication token)
 - **RBAC**: Role-Based Access Control
@@ -1220,7 +1394,7 @@ jobs:
 - **RTO**: Recovery Time Objective
 - **RPO**: Recovery Point Objective
 
-### 17.2 References
+### 15.2 References
 
 - [AIOutlet Architecture Guide](../../docs/ARCHITECTURE.md)
 - [Event-Driven Architecture](../../docs/EVENT_DRIVEN_ARCHITECTURE.md)
