@@ -1,9 +1,15 @@
 import User from '../models/user.model.js';
 import asyncHandler from '../middlewares/asyncHandler.js';
 import * as userService from '../services/user.service.js';
-import logger from '../observability/index.js';
-import messageBrokerService from '../services/messageBrokerServiceClient.js';
-import ErrorResponse from '../utils/ErrorResponse.js';
+import logger from '../core/logger.js';
+import {
+  publishUserCreated,
+  publishUserDeleted,
+  publishUserUpdated,
+  publishUserLoggedIn,
+  publishUserLoggedOut,
+} from '../events/publisher.js';
+import ErrorResponse from '../core/errors.js';
 
 /**
  * @desc    Get user statistics for admin dashboard
@@ -196,7 +202,7 @@ export const createUser = asyncHandler(async (req, res, next) => {
     const correlationId = req.headers['x-correlation-id'] || req.correlationId;
 
     // Publish user.created event
-    await messageBrokerService.publishUserCreated(user, correlationId, clientIP, userAgent);
+    await userEventPublisher.publishUserCreated(user, correlationId, clientIP, userAgent);
 
     // Return user without password
     const userResponse = user.toObject();
@@ -250,13 +256,7 @@ export const updateUser = asyncHandler(async (req, res, next) => {
 
     // Publish user.updated event to message broker (admin update)
     const correlationId = req.headers['x-correlation-id'] || req.correlationId;
-    await messageBrokerService.publishUserUpdated(
-      result,
-      correlationId,
-      req.user?._id?.toString(),
-      clientIP,
-      userAgent
-    );
+    await publishUserUpdated(result, correlationId, req.user?._id?.toString(), clientIP, userAgent);
 
     res.json(result);
   } catch (err) {

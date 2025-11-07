@@ -112,21 +112,26 @@ const validationRules = {
     default: 'admin',
   },
 
-  // Message Broker Service Configuration (HTTP Gateway)
-  MESSAGE_BROKER_SERVICE_URL: {
-    required: true,
-    validator: isValidUrl,
-    errorMessage: 'MESSAGE_BROKER_SERVICE_URL must be a valid URL',
-  },
-  MESSAGE_BROKER_API_KEY: {
-    required: true,
-    validator: (value) => value && value.length > 0,
-    errorMessage: 'MESSAGE_BROKER_API_KEY must be a non-empty string',
-  },
-  MESSAGE_BROKER_HEALTH_URL: {
+  // Dapr Configuration
+  DAPR_HTTP_PORT: {
     required: false,
-    validator: (value) => !value || isValidUrl(value),
-    errorMessage: 'MESSAGE_BROKER_HEALTH_URL must be a valid URL if provided',
+    validator: (value) => !value || (Number.isInteger(Number(value)) && Number(value) >= 1 && Number(value) <= 65535),
+    errorMessage: 'DAPR_HTTP_PORT must be a valid port number (1-65535)',
+  },
+  DAPR_HOST: {
+    required: false,
+    validator: (value) => !value || (typeof value === 'string' && value.length > 0),
+    errorMessage: 'DAPR_HOST must be a non-empty string',
+  },
+  DAPR_PUBSUB_NAME: {
+    required: false,
+    validator: (value) => !value || (typeof value === 'string' && value.length > 0),
+    errorMessage: 'DAPR_PUBSUB_NAME must be a non-empty string',
+  },
+  DAPR_APP_ID: {
+    required: false,
+    validator: (value) => !value || (typeof value === 'string' && value.length > 0),
+    errorMessage: 'DAPR_APP_ID must be a non-empty string',
   },
 
   // Security Configuration
@@ -184,19 +189,6 @@ const validationRules = {
     validator: (value) => !value || (value.length > 0 && value.includes('.')),
     errorMessage: 'LOG_FILE_PATH must be a valid file path with extension',
     default: './logs/user-service.log',
-  },
-
-  // Observability Configuration
-  ENABLE_TRACING: {
-    required: false,
-    validator: (value) => ['true', 'false'].includes(value?.toLowerCase()),
-    errorMessage: 'ENABLE_TRACING must be true or false',
-    default: 'false',
-  },
-  OTEL_EXPORTER_OTLP_ENDPOINT: {
-    required: false,
-    validator: (value) => !value || isValidUrl(value),
-    errorMessage: 'OTEL_EXPORTER_OTLP_ENDPOINT must be a valid URL',
   },
   CORRELATION_ID_HEADER: {
     required: false,

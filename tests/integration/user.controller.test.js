@@ -1,9 +1,11 @@
 import {
   createUser,
-  getUser as getUserById, // Map to available function
+  getUser,
+  getUserById,
   updateUser,
   updatePassword,
-  deleteUser as deactivateAccount, // Map to available function
+  deleteUser,
+  deactivateAccount,
   findByEmail,
   updateUserById,
   updateUserPasswordById,

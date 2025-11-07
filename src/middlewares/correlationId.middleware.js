@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import logger from '../observability/index.js';
+import logger from '../core/logger.js';
 
 /**
  * Middleware to handle correlation IDs for distributed tracing

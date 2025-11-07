@@ -1,7 +1,7 @@
 import * as userService from '../../../src/services/user.service.js';
 import User from '../../../src/models/user.model.js';
 import userValidator from '../../../src/validators/user.validator.js';
-import ErrorResponse from '../../../src/utils/ErrorResponse.js';
+import ErrorResponse from '../../../src/core/errors.js';
 
 jest.mock('../../../src/models/user.model.js');
 jest.mock('../../../src/validators/user.validator.js');

@@ -1,8 +1,8 @@
 import asyncHandler from '../middlewares/asyncHandler.js';
-import ErrorResponse from '../utils/ErrorResponse.js';
+import ErrorResponse from '../core/errors.js';
 import userWishlistValidator from '../validators/user.wishlist.validator.js';
 import User from '../models/user.model.js';
-import logger from '../observability/index.js';
+import logger from '../core/logger.js';
 
 /**
  * User Wishlist Management Controller

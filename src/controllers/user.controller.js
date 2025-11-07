@@ -1,10 +1,16 @@
-import ErrorResponse from '../utils/ErrorResponse.js';
-import logger from '../observability/index.js';
+import ErrorResponse from '../core/errors.js';
+import logger from '../core/logger.js';
 import User from '../models/user.model.js';
 import asyncHandler from '../middlewares/asyncHandler.js';
 import userValidator from '../validators/user.validator.js';
 import * as userService from '../services/user.service.js';
-import messageBrokerService from '../services/messageBrokerServiceClient.js';
+import {
+  publishUserCreated,
+  publishUserDeleted,
+  publishUserUpdated,
+  publishUserLoggedIn,
+  publishUserLoggedOut,
+} from '../events/publisher.js';
 
 // @desc    Create a new user
 // @route   POST /users
@@ -75,7 +81,7 @@ export const createUser = asyncHandler(async (req, res, next) => {
 
     // Publish user.created event to message broker
     const correlationId = req.headers['x-correlation-id'] || req.correlationId;
-    await messageBrokerService.publishUserCreated(user, correlationId, clientIP, userAgent);
+    await publishUserCreated(user, correlationId, clientIP, userAgent);
 
     res.status(201).json(user);
   } catch (err) {
@@ -119,7 +125,7 @@ export const updateUser = asyncHandler(async (req, res, next) => {
 
     // Publish user.updated event to message broker (self-update)
     const correlationId = req.headers['x-correlation-id'] || req.correlationId;
-    await messageBrokerService.publishUserUpdated(result, correlationId, req.user._id.toString(), clientIP, userAgent);
+    await publishUserUpdated(result, correlationId, req.user._id.toString(), clientIP, userAgent);
 
     res.json(result);
   } catch (err) {

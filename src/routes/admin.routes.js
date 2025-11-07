@@ -8,13 +8,12 @@ import {
   getUserStats,
   getRecentUsers,
 } from '../controllers/admin.controller.js';
-import { requireAuth } from '../middlewares/auth.middleware.js';
-import { requireRole } from '../middlewares/role.middleware.js';
+import { requireAuth, requireAdmin } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
 // All admin routes require authentication and admin role
-router.use(requireAuth, requireRole('admin'));
+router.use(requireAuth, requireAdmin);
 
 // Specific routes must come before parameterized routes
 router.get('/stats', getUserStats); // GET /admin/users/stats

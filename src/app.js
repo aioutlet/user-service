@@ -1,17 +1,22 @@
+import dotenv from 'dotenv';
+dotenv.config({ quiet: true });
+
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 
-import { getConfigArray } from './validators/config.validator.js';
+import validateConfig, { getConfigArray } from './validators/config.validator.js';
+import config from './core/config.js';
+import logger from './core/logger.js';
 import connectDB from './database/db.js';
 import adminRoutes from './routes/admin.routes.js';
 import homeRoutes from './routes/home.routes.js';
 import userRoutes from './routes/user.routes.js';
 import operationalRoutes from './routes/operational.routes.js';
-import logger from './observability/index.js';
 import correlationIdMiddleware from './middlewares/correlationId.middleware.js';
 
-// Config validation already done in server.js before this module loads
+// Validate configuration before starting
+validateConfig();
 const app = express();
 
 // Trust proxy for accurate IP address extraction
@@ -36,10 +41,10 @@ app.use(cookieParser());
 await connectDB();
 
 // Routes
-app.use('/api/home', homeRoutes);
+app.use('/api', homeRoutes);
+app.use('/api', operationalRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin/users', adminRoutes);
-app.use('/', operationalRoutes);
 
 // Centralized error handler for consistent error responses
 app.use((err, req, res, _next) => {
@@ -68,11 +73,19 @@ app.use((err, req, res, _next) => {
   });
 });
 
-const PORT = parseInt(process.env.PORT, 10) || 3002;
-const HOST = process.env.HOST || '0.0.0.0';
+const PORT = config.service.port;
+const HOST = config.service.host;
 
 app.listen(PORT, HOST, () => {
-  logger.info(`User service running on ${HOST}:${PORT} in ${process.env.NODE_ENV} mode`);
+  logger.info(`User service running on ${HOST}:${PORT} in ${config.service.nodeEnv} mode`, {
+    service: config.service.name,
+    version: config.service.version,
+    dapr: {
+      enabled: true,
+      appId: config.dapr.appId,
+      httpPort: config.dapr.httpPort,
+    },
+  });
 });
 
 // Graceful shutdown

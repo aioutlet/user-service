@@ -3,8 +3,80 @@
  * These endpoints are used by monitoring systems, load balancers, and DevOps tools
  */
 
-import { checkDatabaseHealth } from '../utils/dependencyHealthChecker.js';
-import logger from '../observability/index.js';
+import mongoose from 'mongoose';
+import logger from '../core/logger.js';
+import { daprClient } from '../core/dapr.js';
+import config from '../core/config.js';
+
+/**
+ * Create MongoDB connection URI from environment variables
+ * @returns {string} - MongoDB connection URI
+ */
+function createMongoURI() {
+  const mongoHost = process.env.MONGODB_HOST || 'localhost';
+  const mongoPort = process.env.MONGODB_PORT || '27017';
+  const mongoUsername = process.env.MONGO_INITDB_ROOT_USERNAME;
+  const mongoPassword = process.env.MONGO_INITDB_ROOT_PASSWORD;
+  const mongoDatabase = process.env.MONGO_INITDB_DATABASE;
+  const mongoAuthSource = process.env.MONGODB_AUTH_SOURCE || 'admin';
+
+  if (mongoUsername && mongoPassword) {
+    return `mongodb://${mongoUsername}:${mongoPassword}@${mongoHost}:${mongoPort}/${mongoDatabase}?authSource=${mongoAuthSource}`;
+  } else {
+    return `mongodb://${mongoHost}:${mongoPort}/${mongoDatabase}`;
+  }
+}
+
+/**
+ * Check MongoDB database health using independent connection
+ * @returns {Promise<Object>} - Database health status
+ */
+async function checkDatabaseHealth() {
+  let connection = null;
+  try {
+    const mongoURI = createMongoURI();
+
+    // Create a separate connection for health checking
+    connection = mongoose.createConnection(mongoURI, {
+      maxPoolSize: 1,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 5000,
+      connectTimeoutMS: 5000,
+    });
+
+    // Wait for connection to be established using promise-based approach
+    await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Connection timeout'));
+      }, 6000); // Slightly longer than serverSelectionTimeoutMS
+
+      connection.once('connected', () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+
+      connection.once('error', (error) => {
+        clearTimeout(timeout);
+        reject(error);
+      });
+    });
+
+    // Now the connection should be ready - verify with ping
+    await connection.db.admin().ping();
+    return { service: 'database', status: 'healthy' };
+  } catch (error) {
+    return { service: 'database', status: 'unhealthy', error: error.message };
+  } finally {
+    // Always close the health check connection
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (closeError) {
+        // Ignore close errors
+      }
+    }
+  }
+}
 
 /**
  * Get system metrics for monitoring
@@ -27,7 +99,7 @@ function getSystemMetrics() {
 }
 
 /**
- * Perform readiness check including database connectivity
+ * Perform readiness check including database and Dapr connectivity
  * @returns {Promise<Object>} - Readiness check results
  */
 async function performReadinessCheck() {
@@ -42,6 +114,17 @@ async function performReadinessCheck() {
       ...(dbHealth.error && { error: dbHealth.error }),
       ...(dbHealth.readyState && { readyState: dbHealth.readyState }),
     };
+
+    // Check Dapr sidecar health
+    let isDaprReady = false;
+    try {
+      await daprClient.getMetadata();
+      isDaprReady = true;
+      checks.dapr = { status: 'healthy' };
+    } catch (error) {
+      logger.warn('Dapr health check failed', { error: error.message });
+      checks.dapr = { status: 'unhealthy', error: error.message };
+    }
 
     const allHealthy = Object.values(checks).every((check) => check.status === 'healthy');
     const status = allHealthy ? 'ready' : 'not ready';
@@ -84,11 +167,16 @@ async function performLivenessCheck() {
 export function health(req, res) {
   res.json({
     status: 'healthy',
-    service: process.env.SERVICE_NAME || 'user-service',
-    version: process.env.SERVICE_VERSION || '1.0.0',
-    environment: process.env.NODE_ENV || 'development',
+    service: config.service.name,
+    version: config.service.version,
+    environment: config.service.nodeEnv,
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
+    dapr: {
+      enabled: true,
+      appId: config.dapr.appId,
+      httpPort: config.dapr.httpPort,
+    },
   });
 }
 

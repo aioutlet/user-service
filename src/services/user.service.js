@@ -1,6 +1,6 @@
 import User from '../models/user.model.js';
 import userValidator from '../validators/user.validator.js';
-import ErrorResponse from '../utils/ErrorResponse.js';
+import ErrorResponse from '../core/errors.js';
 
 export async function getUserById(userId) {
   const user = await User.findById(userId, '-password');

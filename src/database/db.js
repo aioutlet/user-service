@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import logger from '../observability/index.js';
+import logger from '../core/logger.js';
 
 const connectDB = async () => {
   try {
@@ -11,23 +11,30 @@ const connectDB = async () => {
     const mongoDatabase = process.env.MONGO_INITDB_DATABASE;
     const mongoAuthSource = process.env.MONGODB_AUTH_SOURCE || 'admin';
 
+    // Force IPv4 by replacing 'localhost' with '127.0.0.1'
+    const host = mongoHost === 'localhost' ? '127.0.0.1' : mongoHost;
+
     let mongodb_uri;
     if (mongoUsername && mongoPassword) {
-      mongodb_uri = `mongodb://${mongoUsername}:${mongoPassword}@${mongoHost}:${mongoPort}/${mongoDatabase}?authSource=${mongoAuthSource}`;
+      mongodb_uri = `mongodb://${mongoUsername}:${mongoPassword}@${host}:${mongoPort}/${mongoDatabase}?authSource=${mongoAuthSource}`;
     } else {
-      mongodb_uri = `mongodb://${mongoHost}:${mongoPort}/${mongoDatabase}`;
+      mongodb_uri = `mongodb://${host}:${mongoPort}/${mongoDatabase}`;
     }
 
-    logger.info(`Connecting to MongoDB: ${mongoHost}:${mongoPort}/${mongoDatabase}`);
+    logger.info(`Connecting to MongoDB: ${host}:${mongoPort}/${mongoDatabase}`);
 
     // Set global promise library
     mongoose.Promise = global.Promise;
+
+    // Set strictQuery to false to prepare for Mongoose 7
+    mongoose.set('strictQuery', false);
 
     // Connect to MongoDB with connection options
     const conn = await mongoose.connect(mongodb_uri, {
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
+      family: 4, // Force IPv4
     });
 
     logger.info(`MongoDB connected: ${conn.connection.host}:${conn.connection.port}/${conn.connection.name}`);

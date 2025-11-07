@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/user.model.js';
-import logger from '../observability/index.js';
-import ErrorResponse from '../utils/ErrorResponse.js';
+import logger from '../core/logger.js';
+import ErrorResponse from '../core/errors.js';
 
 /**
  * Middleware for JWT authentication in the user service.
