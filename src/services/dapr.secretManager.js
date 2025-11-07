@@ -2,6 +2,8 @@
  * Dapr Secret Management Service
  * Provides secret management using Dapr's secret store building block.
  * Falls back to environment variables if Dapr is not available.
+ *
+ * NOTE: Environment variables are loaded in server.js before this module is imported
  */
 
 import { DaprClient } from '@dapr/dapr';

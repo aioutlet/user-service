@@ -2,25 +2,30 @@ import User from '../models/user.model.js';
 import asyncHandler from '../middlewares/asyncHandler.js';
 import * as userService from '../services/user.service.js';
 import logger from '../core/logger.js';
-import {
-  publishUserCreated,
-  publishUserDeleted,
-  publishUserUpdated,
-  publishUserLoggedIn,
-  publishUserLoggedOut,
-} from '../events/publisher.js';
+import { publishUserUpdated } from '../events/publisher.js';
 import ErrorResponse from '../core/errors.js';
 
 /**
- * @desc    Get user statistics for admin dashboard
- * @route   GET /admin/stats
+ * @desc    Get comprehensive user statistics for admin dashboard
+ * @route   GET /admin/users/stats
  * @access  Admin only
+ * @query   includeRecent - Include recent users (true/false)
+ * @query   recentLimit - Limit for recent users (default: 10)
+ * @query   period - Analytics period (e.g., '30d', '7d', '1y')
  */
 export const getUserStats = asyncHandler(async (req, res, _next) => {
-  logger.info('Fetching user statistics', {
+  const includeRecent = req.query.includeRecent === 'true';
+  const recentLimit = parseInt(req.query.recentLimit) || 10;
+  const period = req.query.period;
+
+  logger.info('Fetching comprehensive user statistics', {
     userId: req.user?._id,
     correlationId: req.correlationId,
+    includeRecent,
+    recentLimit,
+    period,
   });
+
   // Get current date for calculations
   const now = new Date();
   const firstDayThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -28,7 +33,7 @@ export const getUserStats = asyncHandler(async (req, res, _next) => {
   const lastDayLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
 
   // Parallel aggregation queries for better performance
-  const [totalUsers, activeUsers, newUsersThisMonth, newUsersLastMonth] = await Promise.all([
+  const queries = [
     // Total users count
     User.countDocuments({ isActive: { $ne: false } }),
 
@@ -50,7 +55,20 @@ export const getUserStats = asyncHandler(async (req, res, _next) => {
         $lte: lastDayLastMonth,
       },
     }),
-  ]);
+  ];
+
+  // Add recent users query if requested
+  if (includeRecent) {
+    queries.push(
+      User.find({ isActive: { $ne: false } }, 'firstName lastName email roles createdAt')
+        .sort({ createdAt: -1 })
+        .limit(recentLimit)
+        .lean()
+    );
+  }
+
+  const results = await Promise.all(queries);
+  const [totalUsers, activeUsers, newUsersThisMonth, newUsersLastMonth, recentUsersData] = results;
 
   // Calculate growth percentage
   const growth =
@@ -67,66 +85,68 @@ export const getUserStats = asyncHandler(async (req, res, _next) => {
     growth: parseFloat(growth),
   };
 
-  logger.info('User statistics retrieved successfully', {
-    userId: req.user?._id,
-    correlationId: req.correlationId,
-    stats,
-  });
-
-  res.json(stats);
-});
-
-/**
- * @desc    Get recent users for admin dashboard
- * @route   GET /admin/users/recent
- * @access  Admin only
- */
-export const getRecentUsers = asyncHandler(async (req, res, _next) => {
-  const limit = parseInt(req.query.limit) || 5;
-
-  logger.info('Fetching recent users', {
-    userId: req.user?._id,
-    correlationId: req.correlationId,
-    limit,
-  });
-
-  try {
-    // Get recently created users
-    const recentUsers = await User.find({ isActive: { $ne: false } }, 'firstName lastName email roles createdAt')
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .lean();
-
-    logger.debug('Found recent users', {
-      correlationId: req.correlationId,
-      count: recentUsers.length,
-    });
-
-    // Transform to match the expected format
-    const formattedUsers = recentUsers.map((user) => ({
+  // Add recent users if requested
+  if (includeRecent && recentUsersData) {
+    stats.recentUsers = recentUsersData.map((user) => ({
       id: user._id.toString(),
       name: `${user.firstName} ${user.lastName}`,
       email: user.email,
       role: user.roles.includes('admin') ? 'admin' : 'customer',
       createdAt: user.createdAt.toISOString(),
     }));
-
-    logger.info('Recent users retrieved successfully', {
-      userId: req.user?._id,
-      correlationId: req.correlationId,
-      count: formattedUsers.length,
-    });
-
-    res.json(formattedUsers);
-  } catch (error) {
-    logger.error('Failed to fetch recent users', {
-      userId: req.user?._id,
-      correlationId: req.correlationId,
-      error: error.message,
-      stack: error.stack,
-    });
-    throw error;
   }
+
+  // Add analytics if period is specified
+  if (period) {
+    const daysMap = {
+      '7d': 7,
+      '30d': 30,
+      '90d': 90,
+      '1y': 365,
+    };
+    const days = daysMap[period] || 30;
+    const periodStart = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+    // Get user registrations over the period
+    const registrations = await User.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: periodStart },
+        },
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { _id: 1 },
+      },
+    ]);
+
+    stats.analytics = {
+      period,
+      registrations: registrations.map((r) => ({
+        date: r._id,
+        count: r.count,
+      })),
+    };
+  }
+
+  logger.info('Comprehensive user statistics retrieved successfully', {
+    userId: req.user?._id,
+    correlationId: req.correlationId,
+    stats: {
+      total: stats.total,
+      active: stats.active,
+      includeRecent,
+      includedRecentCount: stats.recentUsers?.length || 0,
+      includedAnalytics: !!period,
+    },
+  });
+
+  res.json(stats);
 });
 
 /**

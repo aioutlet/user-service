@@ -2,7 +2,7 @@
   "name": "user-service",
   "version": "1.0.0",
   "description": "User management microservice for AIOutlet platform.",
-  "main": "src/app.js",
+  "main": "src/server.js",
   "type": "module",
   "repository": {
     "type": "git",
@@ -22,9 +22,9 @@
   },
   "homepage": "https://github.com/aioutlet/user-service#readme",
   "scripts": {
-    "start": "node src/app.js",
-    "dev": "nodemon src/app.js",
-    "dapr": "dotenv -e .env -- dapr run --app-id user-service --app-port 3002 --dapr-http-port 3502 --dapr-grpc-port 50003 --log-level warn --config ./.dapr/config.yaml --resources-path ./.dapr/components -- node src/app.js",
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "dapr": "cross-env DAPR_ENABLED=true dotenv -e .env -- dapr run --app-id user-service --app-port 3002 --dapr-http-port 3502 --dapr-grpc-port 50003 --log-level warn --config ./.dapr/config.yaml --resources-path ./.dapr/components -- node src/server.js",
     "test": "node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js --runInBand",
     "test:watch": "node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js --watch",
     "test:coverage": "node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js --coverage --runInBand",

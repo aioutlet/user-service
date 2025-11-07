@@ -8,11 +8,23 @@ import logger from './logger.js';
 
 class DaprClientHelper {
   constructor() {
-    this.client = new DaprClient({
-      daprHost: config.dapr.host,
-      daprPort: config.dapr.httpPort,
-      communicationProtocol: CommunicationProtocolEnum.HTTP,
-    });
+    this.client = null;
+    this.daprEnabled = (process.env.DAPR_ENABLED || 'true').toLowerCase() === 'true';
+  }
+
+  getClient() {
+    if (!this.daprEnabled) {
+      throw new Error('Dapr is disabled. Set DAPR_ENABLED=true to use Dapr features.');
+    }
+
+    if (!this.client) {
+      this.client = new DaprClient({
+        daprHost: config.dapr.host,
+        daprPort: config.dapr.httpPort,
+        communicationProtocol: CommunicationProtocolEnum.HTTP,
+      });
+    }
+    return this.client;
   }
 
   /**
@@ -33,7 +45,8 @@ class DaprClientHelper {
         metadata,
       });
 
-      const response = await this.client.invoker.invoke(appId, methodName, httpMethod, data, metadata);
+      const client = this.getClient();
+      const response = await client.invoker.invoke(appId, methodName, httpMethod, data, metadata);
 
       logger.info('Service invocation successful', {
         appId,
@@ -63,7 +76,8 @@ class DaprClientHelper {
     try {
       logger.debug('Getting secret from Dapr', { storeName, key });
 
-      const secret = await this.client.secret.get(storeName, key, metadata);
+      const client = this.getClient();
+      const secret = await client.secret.get(storeName, key, metadata);
 
       logger.info('Secret retrieved successfully', { storeName, key });
       return secret;
@@ -87,7 +101,8 @@ class DaprClientHelper {
     try {
       logger.debug('Getting bulk secrets from Dapr', { storeName });
 
-      const secrets = await this.client.secret.getBulk(storeName, metadata);
+      const client = this.getClient();
+      const secrets = await client.secret.getBulk(storeName, metadata);
 
       logger.info('Bulk secrets retrieved successfully', {
         storeName,
@@ -115,7 +130,8 @@ class DaprClientHelper {
     try {
       logger.debug('Saving state to Dapr', { storeName, key });
 
-      await this.client.state.save(storeName, [
+      const client = this.getClient();
+      await client.state.save(storeName, [
         {
           key,
           value,
@@ -145,7 +161,8 @@ class DaprClientHelper {
     try {
       logger.debug('Getting state from Dapr', { storeName, key });
 
-      const state = await this.client.state.get(storeName, key, options);
+      const client = this.getClient();
+      const state = await client.state.get(storeName, key, options);
 
       logger.info('State retrieved successfully', { storeName, key });
       return state;
@@ -170,7 +187,8 @@ class DaprClientHelper {
     try {
       logger.debug('Deleting state from Dapr', { storeName, key });
 
-      await this.client.state.delete(storeName, key, options);
+      const client = this.getClient();
+      await client.state.delete(storeName, key, options);
 
       logger.info('State deleted successfully', { storeName, key });
     } catch (error) {
@@ -194,7 +212,8 @@ class DaprClientHelper {
     try {
       logger.debug('Publishing event via Dapr', { pubsubName, topic });
 
-      await this.client.pubsub.publish(pubsubName, topic, data);
+      const client = this.getClient();
+      await client.pubsub.publish(pubsubName, topic, data);
 
       logger.info('Event published successfully', { pubsubName, topic });
     } catch (error) {
@@ -213,7 +232,8 @@ class DaprClientHelper {
    */
   async getMetadata() {
     try {
-      const metadata = await this.client.metadata.get();
+      const client = this.getClient();
+      const metadata = await client.metadata.get();
       return metadata;
     } catch (error) {
       logger.error('Failed to get Dapr metadata', { error: error.message });

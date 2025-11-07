@@ -6,11 +6,23 @@ import { DaprClient } from '@dapr/dapr';
 import logger from '../core/logger.js';
 import config from '../core/config.js';
 
-// Initialize Dapr client
-const daprClient = new DaprClient({
-  daprHost: config.dapr.host,
-  daprPort: config.dapr.httpPort,
-});
+// Lazy initialization of Dapr client
+let daprClient = null;
+const daprEnabled = (process.env.DAPR_ENABLED || 'true').toLowerCase() === 'true';
+
+function getDaprClient() {
+  if (!daprEnabled) {
+    return null;
+  }
+
+  if (!daprClient) {
+    daprClient = new DaprClient({
+      daprHost: config.dapr.host,
+      daprPort: config.dapr.httpPort,
+    });
+  }
+  return daprClient;
+}
 
 /**
  * Publish user.created event
@@ -21,6 +33,16 @@ const daprClient = new DaprClient({
  * @returns {Promise<void>}
  */
 export async function publishUserCreated(user, correlationId, ipAddress = null, userAgent = null) {
+  const client = getDaprClient();
+  if (!client) {
+    logger.debug('Dapr disabled, skipping event publish', {
+      operation: 'event_publish',
+      eventType: 'user.created',
+      userId: user._id.toString(),
+    });
+    return;
+  }
+
   try {
     const eventData = {
       specversion: '1.0',
@@ -50,7 +72,7 @@ export async function publishUserCreated(user, correlationId, ipAddress = null, 
       },
     };
 
-    await daprClient.pubsub.publish(config.dapr.pubsubName, 'user.created', eventData);
+    await client.pubsub.publish(config.dapr.pubsubName, 'user.created', eventData);
 
     logger.info('Published user.created event', null, {
       operation: 'event_publish',
@@ -80,6 +102,16 @@ export async function publishUserCreated(user, correlationId, ipAddress = null, 
  * @returns {Promise<void>}
  */
 export async function publishUserUpdated(user, correlationId, updatedBy = null, ipAddress = null, userAgent = null) {
+  const client = getDaprClient();
+  if (!client) {
+    logger.debug('Dapr disabled, skipping event publish', {
+      operation: 'event_publish',
+      eventType: 'user.updated',
+      userId: user._id.toString(),
+    });
+    return;
+  }
+
   try {
     const eventData = {
       specversion: '1.0',
@@ -110,7 +142,7 @@ export async function publishUserUpdated(user, correlationId, updatedBy = null, 
       },
     };
 
-    await daprClient.pubsub.publish(config.dapr.pubsubName, 'user.updated', eventData);
+    await client.pubsub.publish(config.dapr.pubsubName, 'user.updated', eventData);
 
     logger.info('Published user.updated event', null, {
       operation: 'event_publish',
@@ -137,6 +169,16 @@ export async function publishUserUpdated(user, correlationId, updatedBy = null, 
  * @returns {Promise<void>}
  */
 export async function publishUserDeleted(userId, correlationId) {
+  const client = getDaprClient();
+  if (!client) {
+    logger.debug('Dapr disabled, skipping event publish', {
+      operation: 'event_publish',
+      eventType: 'user.deleted',
+      userId,
+    });
+    return;
+  }
+
   try {
     const eventData = {
       specversion: '1.0',
@@ -155,7 +197,7 @@ export async function publishUserDeleted(userId, correlationId) {
       },
     };
 
-    await daprClient.pubsub.publish(config.dapr.pubsubName, 'user.deleted', eventData);
+    await client.pubsub.publish(config.dapr.pubsubName, 'user.deleted', eventData);
 
     logger.info('Published user.deleted event', null, {
       operation: 'event_publish',
@@ -185,6 +227,16 @@ export async function publishUserDeleted(userId, correlationId) {
  * @returns {Promise<void>}
  */
 export async function publishUserLoggedIn(userId, email, correlationId, ipAddress = null, userAgent = null) {
+  const client = getDaprClient();
+  if (!client) {
+    logger.debug('Dapr disabled, skipping event publish', {
+      operation: 'event_publish',
+      eventType: 'user.logged_in',
+      userId,
+    });
+    return;
+  }
+
   try {
     const eventData = {
       specversion: '1.0',
@@ -206,7 +258,7 @@ export async function publishUserLoggedIn(userId, email, correlationId, ipAddres
       },
     };
 
-    await daprClient.pubsub.publish(config.dapr.pubsubName, 'user.logged_in', eventData);
+    await client.pubsub.publish(config.dapr.pubsubName, 'user.logged_in', eventData);
 
     logger.info('Published user.logged_in event', null, {
       operation: 'event_publish',
@@ -234,6 +286,16 @@ export async function publishUserLoggedIn(userId, email, correlationId, ipAddres
  * @returns {Promise<void>}
  */
 export async function publishUserLoggedOut(userId, email, correlationId) {
+  const client = getDaprClient();
+  if (!client) {
+    logger.debug('Dapr disabled, skipping event publish', {
+      operation: 'event_publish',
+      eventType: 'user.logged_out',
+      userId,
+    });
+    return;
+  }
+
   try {
     const eventData = {
       specversion: '1.0',
@@ -253,7 +315,7 @@ export async function publishUserLoggedOut(userId, email, correlationId) {
       },
     };
 
-    await daprClient.pubsub.publish(config.dapr.pubsubName, 'user.logged_out', eventData);
+    await client.pubsub.publish(config.dapr.pubsubName, 'user.logged_out', eventData);
 
     logger.info('Published user.logged_out event', null, {
       operation: 'event_publish',

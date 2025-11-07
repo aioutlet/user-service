@@ -6,7 +6,6 @@ import {
   updateUser,
   deleteUser,
   getUserStats,
-  getRecentUsers,
 } from '../controllers/admin.controller.js';
 import { requireAuth, requireAdmin } from '../middlewares/auth.middleware.js';
 
@@ -16,8 +15,7 @@ const router = express.Router();
 router.use(requireAuth, requireAdmin);
 
 // Specific routes must come before parameterized routes
-router.get('/stats', getUserStats); // GET /admin/users/stats
-router.get('/list/recent', getRecentUsers); // GET /admin/users/list/recent
+router.get('/stats', getUserStats); // GET /admin/users/stats - supports includeRecent, recentLimit, period params
 
 // General routes
 router.get('/', getUsers); // GET /admin/users
