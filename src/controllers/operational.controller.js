@@ -198,7 +198,7 @@ export async function readiness(req, res) {
 
     res.status(statusCode).json({
       status: readinessResult.status,
-      service: process.env.SERVICE_NAME,
+      service: process.env.NAME,
       timestamp: readinessResult.timestamp,
       totalCheckTime: readinessResult.totalCheckTime,
       checks: readinessResult.checks,
@@ -208,7 +208,7 @@ export async function readiness(req, res) {
     logger.error('Readiness check failed', { error: error.message });
     res.status(503).json({
       status: 'not ready',
-      service: process.env.SERVICE_NAME,
+      service: process.env.NAME,
       timestamp: new Date().toISOString(),
       error: 'Readiness check failed',
       details: error.message,
@@ -232,7 +232,7 @@ export async function liveness(req, res) {
 
     res.status(statusCode).json({
       status: livenessResult.status,
-      service: process.env.SERVICE_NAME,
+      service: process.env.NAME,
       timestamp: livenessResult.timestamp,
       uptime: livenessResult.uptime,
       checks: livenessResult.checks,
@@ -242,7 +242,7 @@ export async function liveness(req, res) {
     logger.error('Liveness check failed', { error: error.message });
     res.status(503).json({
       status: 'unhealthy',
-      service: process.env.SERVICE_NAME,
+      service: process.env.NAME,
       timestamp: new Date().toISOString(),
       error: 'Liveness check failed',
       details: error.message,
@@ -255,13 +255,13 @@ export function metrics(req, res) {
     const systemMetrics = getSystemMetrics();
 
     res.json({
-      service: process.env.SERVICE_NAME,
+      service: process.env.NAME,
       ...systemMetrics,
     });
   } catch (error) {
     logger.error('Metrics collection failed', { error: error.message });
     res.status(500).json({
-      service: process.env.SERVICE_NAME,
+      service: process.env.NAME,
       timestamp: new Date().toISOString(),
       error: 'Metrics collection failed',
       details: error.message,
