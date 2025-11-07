@@ -2,6 +2,16 @@ import jwt from 'jsonwebtoken';
 import User from '../models/user.model.js';
 import logger from '../core/logger.js';
 import ErrorResponse from '../core/errors.js';
+import { getJwtConfig } from '../services/dapr.secretManager.js';
+
+// Cache JWT config to avoid repeated Dapr calls
+let jwtConfigCache = null;
+const getJwtSecret = async () => {
+  if (!jwtConfigCache) {
+    jwtConfigCache = await getJwtConfig();
+  }
+  return jwtConfigCache.secret;
+};
 
 /**
  * Middleware for JWT authentication in the user service.
@@ -9,42 +19,51 @@ import ErrorResponse from '../core/errors.js';
  * Also checks if the user account is active in the database.
  * Responds with 401 Unauthorized or 403 if the account is deactivated.
  */
-export function requireAuth(req, res, next) {
-  let token;
-  // Check Authorization header first
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
-    token = req.headers.authorization.split(' ')[1];
-  } else if (req.cookies && req.cookies.jwt) {
-    token = req.cookies.jwt;
-  }
-  if (!token) {
-    logger.warn('requireAuth: No token found');
-    return next(new ErrorResponse('Unauthorized: No token found in Authorization header or cookies', 401));
-  }
+export async function requireAuth(req, res, next) {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    let token;
+    // Check Authorization header first
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+      token = req.headers.authorization.split(' ')[1];
+    } else if (req.cookies && req.cookies.jwt) {
+      token = req.cookies.jwt;
+    }
+
+    if (!token) {
+      logger.warn('requireAuth: No token found');
+      return next(new ErrorResponse('Unauthorized: No token found in Authorization header or cookies', 401));
+    }
+
+    // Get JWT secret from Dapr secret store
+    const secret = await getJwtSecret();
+
+    // Verify token
+    let decoded;
+    try {
+      decoded = jwt.verify(token, secret);
+    } catch (err) {
+      logger.warn('requireAuth: Invalid token', { error: err });
+      return next(new ErrorResponse('Unauthorized: Invalid or expired token', 401));
+    }
+
     req.user = {
       _id: decoded.id,
       email: decoded.email,
       roles: decoded.roles || [],
     };
+
+    // Check if user is active
+    const user = await User.findById(req.user._id);
+    if (!user || user.isActive === false) {
+      return next(new ErrorResponse('Forbidden: Account deactivated or not found', 403));
+    }
+
+    req.user = user;
+    next();
   } catch (err) {
-    logger.warn('requireAuth: Invalid token', { error: err });
-    return next(new ErrorResponse('Unauthorized: Invalid or expired token', 401));
+    logger.error('requireAuth: Error during authentication', { error: err });
+    return next(new ErrorResponse('Internal server error', 500));
   }
-  // Check if user is active
-  User.findById(req.user._id)
-    .then((user) => {
-      if (!user || user.isActive === false) {
-        return next(new ErrorResponse('Forbidden: Account deactivated or not found', 403));
-      }
-      req.user = user;
-      next();
-    })
-    .catch((err) => {
-      logger.error('requireAuth: DB error', { error: err });
-      return next(new ErrorResponse('Internal server error', 500));
-    });
 }
 
 /**
@@ -98,31 +117,40 @@ export function requireCustomer(req, res, next) {
  * Optional authentication middleware
  * Attaches user info if token is present, but doesn't require it
  */
-export function optionalAuth(req, res, next) {
-  let token;
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
-    token = req.headers.authorization.split(' ')[1];
-  } else if (req.cookies && req.cookies.jwt) {
-    token = req.cookies.jwt;
-  }
-
-  if (!token) {
-    req.user = null;
-    return next();
-  }
-
+export async function optionalAuth(req, res, next) {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = {
-      _id: decoded.id,
-      email: decoded.email,
-      roles: decoded.roles || [],
-    };
-    logger.debug('optionalAuth: Token validated', { userId: req.user._id });
-  } catch (err) {
-    logger.debug('optionalAuth: Invalid token', { error: err.message });
-    req.user = null;
-  }
+    let token;
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+      token = req.headers.authorization.split(' ')[1];
+    } else if (req.cookies && req.cookies.jwt) {
+      token = req.cookies.jwt;
+    }
 
-  next();
+    if (!token) {
+      req.user = null;
+      return next();
+    }
+
+    // Get JWT secret from Dapr secret store
+    const secret = await getJwtSecret();
+
+    try {
+      const decoded = jwt.verify(token, secret);
+      req.user = {
+        _id: decoded.id,
+        email: decoded.email,
+        roles: decoded.roles || [],
+      };
+      logger.debug('optionalAuth: Token validated', { userId: req.user._id });
+    } catch (err) {
+      logger.debug('optionalAuth: Invalid token', { error: err.message });
+      req.user = null;
+    }
+
+    next();
+  } catch (err) {
+    logger.error('optionalAuth: Error getting JWT secret', { error: err });
+    req.user = null;
+    next();
+  }
 }

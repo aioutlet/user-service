@@ -1,27 +1,23 @@
 import mongoose from 'mongoose';
 import logger from '../core/logger.js';
+import { getDatabaseConfig } from '../services/dapr.secretManager.js';
 
 const connectDB = async () => {
   try {
-    // Construct MongoDB URI from environment variables
-    const mongoHost = process.env.MONGODB_HOST || 'localhost';
-    const mongoPort = process.env.MONGODB_PORT || '27017';
-    const mongoUsername = process.env.MONGO_INITDB_ROOT_USERNAME;
-    const mongoPassword = process.env.MONGO_INITDB_ROOT_PASSWORD;
-    const mongoDatabase = process.env.MONGO_INITDB_DATABASE;
-    const mongoAuthSource = process.env.MONGODB_AUTH_SOURCE || 'admin';
+    // Get database configuration from Dapr secret store (with fallback to env)
+    const dbConfig = await getDatabaseConfig();
 
     // Force IPv4 by replacing 'localhost' with '127.0.0.1'
-    const host = mongoHost === 'localhost' ? '127.0.0.1' : mongoHost;
+    const host = dbConfig.host === 'localhost' ? '127.0.0.1' : dbConfig.host;
 
     let mongodb_uri;
-    if (mongoUsername && mongoPassword) {
-      mongodb_uri = `mongodb://${mongoUsername}:${mongoPassword}@${host}:${mongoPort}/${mongoDatabase}?authSource=${mongoAuthSource}`;
+    if (dbConfig.username && dbConfig.password) {
+      mongodb_uri = `mongodb://${dbConfig.username}:${dbConfig.password}@${host}:${dbConfig.port}/${dbConfig.database}?authSource=${dbConfig.authSource}`;
     } else {
-      mongodb_uri = `mongodb://${host}:${mongoPort}/${mongoDatabase}`;
+      mongodb_uri = `mongodb://${host}:${dbConfig.port}/${dbConfig.database}`;
     }
 
-    logger.info(`Connecting to MongoDB: ${host}:${mongoPort}/${mongoDatabase}`);
+    logger.info(`Connecting to MongoDB: ${host}:${dbConfig.port}/${dbConfig.database}`);
 
     // Set global promise library
     mongoose.Promise = global.Promise;

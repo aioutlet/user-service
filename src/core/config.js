@@ -1,6 +1,9 @@
 /**
  * Configuration module for user-service
- * Centralizes all environment-based configuration
+ * Centralizes all environment-based configuration (non-sensitive only)
+ *
+ * For sensitive secrets (database credentials, JWT secrets), use:
+ * - import { getDatabaseConfig, getJwtConfig } from '../services/dapr.secretManager.js'
  */
 
 export default {
@@ -10,20 +13,6 @@ export default {
     port: parseInt(process.env.PORT, 10) || 3002,
     host: process.env.HOST || '0.0.0.0',
     nodeEnv: process.env.NODE_ENV || 'development',
-  },
-
-  database: {
-    host: process.env.MONGODB_HOST || 'localhost',
-    port: parseInt(process.env.MONGODB_PORT, 10) || 27018,
-    username: process.env.MONGO_INITDB_ROOT_USERNAME || 'admin',
-    password: process.env.MONGO_INITDB_ROOT_PASSWORD || 'admin123',
-    database: process.env.MONGO_INITDB_DATABASE || 'user_service_db',
-    authSource: process.env.MONGODB_AUTH_SOURCE || 'admin',
-  },
-
-  jwt: {
-    secret: process.env.JWT_SECRET || 'default-secret-key',
-    expire: process.env.JWT_EXPIRE || '24h',
   },
 
   cors: {
