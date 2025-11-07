@@ -1,15 +1,15 @@
-export function getWelcomeMessage(req, res) {
+export function info(req, res) {
   res.json({
     message: 'Welcome to the User Service',
     service: process.env.NAME,
     description: 'User management and profile service for AIOutlet platform',
+    environment: process.env.NODE_ENV || 'development',
   });
 }
 
-export function getVersion(req, res) {
+export function version(req, res) {
   res.json({
     service: process.env.NAME,
     version: process.env.VERSION,
-    environment: process.env.NODE_ENV || 'development',
   });
 }

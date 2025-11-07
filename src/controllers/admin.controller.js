@@ -13,7 +13,7 @@ import ErrorResponse from '../core/errors.js';
  * @query   recentLimit - Limit for recent users (default: 10)
  * @query   period - Analytics period (e.g., '30d', '7d', '1y')
  */
-export const getUserStats = asyncHandler(async (req, res, _next) => {
+export const getStats = asyncHandler(async (req, res, _next) => {
   const includeRecent = req.query.includeRecent === 'true';
   const recentLimit = parseInt(req.query.recentLimit) || 10;
   const period = req.query.period;

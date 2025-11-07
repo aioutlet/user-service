@@ -1,12 +1,5 @@
 import express from 'express';
-import {
-  getUsers,
-  getUser,
-  createUser,
-  updateUser,
-  deleteUser,
-  getUserStats,
-} from '../controllers/admin.controller.js';
+import { getUsers, getUser, createUser, updateUser, deleteUser, getStats } from '../controllers/admin.controller.js';
 import { requireAuth, requireAdmin } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
@@ -15,7 +8,7 @@ const router = express.Router();
 router.use(requireAuth, requireAdmin);
 
 // Specific routes must come before parameterized routes
-router.get('/stats', getUserStats); // GET /admin/users/stats - supports includeRecent, recentLimit, period params
+router.get('/stats', getStats); // GET /admin/users/stats - supports includeRecent, recentLimit, period params
 
 // General routes
 router.get('/', getUsers); // GET /admin/users
