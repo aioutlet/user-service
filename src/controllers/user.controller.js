@@ -31,7 +31,8 @@ export const createUser = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse('Email already exists', 409, 'EMAIL_EXISTS'));
   }
 
-  const startTime = logger.operationStart('CREATE_USER', req, { email });
+  logger.info('Creating new user', { email, correlationId: req.correlationId });
+
   try {
     // Only create user with basic fields - nested documents should be added via specific endpoints
     const userData = {
@@ -56,15 +57,11 @@ export const createUser = asyncHandler(async (req, res, next) => {
     const user = new User(userData);
     await user.save();
 
-    logger.operationComplete('CREATE_USER', startTime, req, {
-      userId: user._id,
-      email: user.email,
-    });
-
-    logger.business('USER_CREATED', req, {
+    logger.info('User created successfully', {
       userId: user._id,
       email: user.email,
       hasEmailVerified: user.isEmailVerified,
+      correlationId: req.correlationId,
     });
 
     // Extract client IP address
