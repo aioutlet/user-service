@@ -47,18 +47,32 @@ export async function requireAuth(req, res, next) {
     }
 
     req.user = {
-      _id: decoded.id,
+      _id: decoded.sub || decoded.id, // Use 'sub' (standard JWT claim) or fallback to 'id'
       email: decoded.email,
       roles: decoded.roles || [],
+      name: decoded.name,
+      emailVerified: decoded.emailVerified,
     };
 
-    // Check if user is active
-    const user = await User.findById(req.user._id);
-    if (!user || user.isActive === false) {
-      return next(new ErrorResponse('Forbidden: Account deactivated or not found', 403));
+    // Optional: Check if user exists in local database (only for user-service specific operations)
+    // For admin operations that don't require local user data, we trust the JWT
+    try {
+      const user = await User.findById(req.user._id);
+      if (user) {
+        // User exists locally, use full user object
+        if (user.isActive === false) {
+          return next(new ErrorResponse('Forbidden: Account deactivated', 403));
+        }
+        req.user = user;
+      }
+      // If user doesn't exist locally, continue with JWT claims (for admin operations)
+    } catch (dbError) {
+      logger.warn('User lookup failed, continuing with JWT claims', {
+        userId: req.user._id,
+        error: dbError.message,
+      });
     }
 
-    req.user = user;
     next();
   } catch (err) {
     logger.error('requireAuth: Error during authentication', { error: err });
