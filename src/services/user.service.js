@@ -1,8 +1,14 @@
 import User from '../models/user.model.js';
 import userValidator from '../validators/user.validator.js';
 import ErrorResponse from '../core/errors.js';
+import mongoose from 'mongoose';
 
 export async function getUserById(userId) {
+  // Validate ObjectId format first
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new ErrorResponse('Invalid user ID format', 400, 'INVALID_USER_ID');
+  }
+
   const user = await User.findById(userId, '-password');
   if (!user) {
     throw new ErrorResponse('User not found', 404, 'USER_NOT_FOUND');
