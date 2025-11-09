@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import logger from '../core/logger.js';
-import { getDatabaseConfig } from '../services/dapr.secretManager.js';
+import { getDatabaseConfig } from '../clients/index.js';
 
 const connectDB = async () => {
   try {

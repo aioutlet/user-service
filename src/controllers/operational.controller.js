@@ -5,7 +5,7 @@
 
 import mongoose from 'mongoose';
 import logger from '../core/logger.js';
-import { daprClient } from '../core/dapr.js';
+import { daprClient } from '../clients/index.js';
 import config from '../core/config.js';
 
 /**

@@ -3,7 +3,7 @@
  * Centralizes all environment-based configuration (non-sensitive only)
  *
  * For sensitive secrets (database credentials, JWT secrets), use:
- * - import { getDatabaseConfig, getJwtConfig } from '../services/dapr.secretManager.js'
+ * - import { getDatabaseConfig, getJwtConfig } from '../clients/index.js'
  */
 
 export default {
