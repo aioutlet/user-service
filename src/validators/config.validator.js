@@ -190,12 +190,6 @@ const validationRules = {
     errorMessage: 'LOG_FILE_PATH must be a valid file path with extension',
     default: './logs/user-service.log',
   },
-  CORRELATION_ID_HEADER: {
-    required: false,
-    validator: (value) => !value || (value.length > 0 && /^[a-z-]+$/.test(value)),
-    errorMessage: 'CORRELATION_ID_HEADER must be lowercase with hyphens only',
-    default: 'x-correlation-id',
-  },
 };
 
 /**

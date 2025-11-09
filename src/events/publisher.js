@@ -27,12 +27,12 @@ function getDaprClient() {
 /**
  * Publish user.created event
  * @param {object} user - User object that was created
- * @param {string} correlationId - Correlation ID for tracking
+ * @param {string} traceId - Trace ID for distributed tracing
  * @param {string} [ipAddress] - IP address of the client making the request
  * @param {string} [userAgent] - User agent string of the client
  * @returns {Promise<void>}
  */
-export async function publishUserCreated(user, correlationId, ipAddress = null, userAgent = null) {
+export async function publishUserCreated(user, traceId, ipAddress = null, userAgent = null) {
   const client = getDaprClient();
   if (!client) {
     logger.debug('Dapr disabled, skipping event publish', {
@@ -65,7 +65,7 @@ export async function publishUserCreated(user, correlationId, ipAddress = null, 
         createdAt: user.createdAt,
       },
       metadata: {
-        correlationId,
+        traceId,
         ipAddress,
         userAgent,
         environment: config.service.nodeEnv,
@@ -78,7 +78,7 @@ export async function publishUserCreated(user, correlationId, ipAddress = null, 
       operation: 'event_publish',
       eventType: 'user.created',
       userId: user._id.toString(),
-      correlationId,
+      traceId,
     });
   } catch (error) {
     logger.error('Failed to publish user.created event', null, {
@@ -86,7 +86,7 @@ export async function publishUserCreated(user, correlationId, ipAddress = null, 
       eventType: 'user.created',
       userId: user._id?.toString(),
       error: error.message,
-      correlationId,
+      traceId,
     });
     // Don't throw - graceful degradation
   }
@@ -95,13 +95,13 @@ export async function publishUserCreated(user, correlationId, ipAddress = null, 
 /**
  * Publish user.updated event
  * @param {object} user - Updated user object
- * @param {string} correlationId - Correlation ID for tracking
+ * @param {string} traceId - Trace ID for distributed tracing
  * @param {string} [updatedBy] - ID of user who performed the update
  * @param {string} [ipAddress] - IP address of the client
  * @param {string} [userAgent] - User agent string
  * @returns {Promise<void>}
  */
-export async function publishUserUpdated(user, correlationId, updatedBy = null, ipAddress = null, userAgent = null) {
+export async function publishUserUpdated(user, traceId, updatedBy = null, ipAddress = null, userAgent = null) {
   const client = getDaprClient();
   if (!client) {
     logger.debug('Dapr disabled, skipping event publish', {
@@ -135,7 +135,7 @@ export async function publishUserUpdated(user, correlationId, updatedBy = null, 
         updatedBy,
       },
       metadata: {
-        correlationId,
+        traceId,
         ipAddress,
         userAgent,
         environment: config.service.nodeEnv,
@@ -148,7 +148,7 @@ export async function publishUserUpdated(user, correlationId, updatedBy = null, 
       operation: 'event_publish',
       eventType: 'user.updated',
       userId: user._id.toString(),
-      correlationId,
+      traceId,
     });
   } catch (error) {
     logger.error('Failed to publish user.updated event', null, {
@@ -156,7 +156,7 @@ export async function publishUserUpdated(user, correlationId, updatedBy = null, 
       eventType: 'user.updated',
       userId: user._id?.toString(),
       error: error.message,
-      correlationId,
+      traceId,
     });
     // Don't throw - graceful degradation
   }
@@ -165,10 +165,10 @@ export async function publishUserUpdated(user, correlationId, updatedBy = null, 
 /**
  * Publish user.deleted event
  * @param {string} userId - User ID
- * @param {string} correlationId - Correlation ID for tracking
+ * @param {string} traceId - Trace ID for distributed tracing
  * @returns {Promise<void>}
  */
-export async function publishUserDeleted(userId, correlationId) {
+export async function publishUserDeleted(userId, traceId) {
   const client = getDaprClient();
   if (!client) {
     logger.debug('Dapr disabled, skipping event publish', {
@@ -192,7 +192,7 @@ export async function publishUserDeleted(userId, correlationId) {
         timestamp: new Date().toISOString(),
       },
       metadata: {
-        correlationId,
+        traceId,
         environment: config.service.nodeEnv,
       },
     };
@@ -203,7 +203,7 @@ export async function publishUserDeleted(userId, correlationId) {
       operation: 'event_publish',
       eventType: 'user.deleted',
       userId,
-      correlationId,
+      traceId,
     });
   } catch (error) {
     logger.error('Failed to publish user.deleted event', null, {
@@ -211,7 +211,7 @@ export async function publishUserDeleted(userId, correlationId) {
       eventType: 'user.deleted',
       userId,
       error: error.message,
-      correlationId,
+      traceId,
     });
     // Don't throw - graceful degradation
   }
@@ -221,12 +221,12 @@ export async function publishUserDeleted(userId, correlationId) {
  * Publish user.logged_in event
  * @param {string} userId - User ID
  * @param {string} email - User email
- * @param {string} correlationId - Correlation ID for tracking
+ * @param {string} traceId - Trace ID for distributed tracing
  * @param {string} [ipAddress] - IP address
  * @param {string} [userAgent] - User agent
  * @returns {Promise<void>}
  */
-export async function publishUserLoggedIn(userId, email, correlationId, ipAddress = null, userAgent = null) {
+export async function publishUserLoggedIn(userId, email, traceId, ipAddress = null, userAgent = null) {
   const client = getDaprClient();
   if (!client) {
     logger.debug('Dapr disabled, skipping event publish', {
@@ -251,7 +251,7 @@ export async function publishUserLoggedIn(userId, email, correlationId, ipAddres
         timestamp: new Date().toISOString(),
       },
       metadata: {
-        correlationId,
+        traceId,
         ipAddress,
         userAgent,
         environment: config.service.nodeEnv,
@@ -264,7 +264,7 @@ export async function publishUserLoggedIn(userId, email, correlationId, ipAddres
       operation: 'event_publish',
       eventType: 'user.logged_in',
       userId,
-      correlationId,
+      traceId,
     });
   } catch (error) {
     logger.error('Failed to publish user.logged_in event', null, {
@@ -272,7 +272,7 @@ export async function publishUserLoggedIn(userId, email, correlationId, ipAddres
       eventType: 'user.logged_in',
       userId,
       error: error.message,
-      correlationId,
+      traceId,
     });
     // Don't throw - graceful degradation
   }
@@ -282,10 +282,10 @@ export async function publishUserLoggedIn(userId, email, correlationId, ipAddres
  * Publish user.logged_out event
  * @param {string} userId - User ID
  * @param {string} email - User email
- * @param {string} correlationId - Correlation ID for tracking
+ * @param {string} traceId - Trace ID for distributed tracing
  * @returns {Promise<void>}
  */
-export async function publishUserLoggedOut(userId, email, correlationId) {
+export async function publishUserLoggedOut(userId, email, traceId) {
   const client = getDaprClient();
   if (!client) {
     logger.debug('Dapr disabled, skipping event publish', {
@@ -310,7 +310,7 @@ export async function publishUserLoggedOut(userId, email, correlationId) {
         timestamp: new Date().toISOString(),
       },
       metadata: {
-        correlationId,
+        traceId,
         environment: config.service.nodeEnv,
       },
     };
@@ -321,7 +321,7 @@ export async function publishUserLoggedOut(userId, email, correlationId) {
       operation: 'event_publish',
       eventType: 'user.logged_out',
       userId,
-      correlationId,
+      traceId,
     });
   } catch (error) {
     logger.error('Failed to publish user.logged_out event', null, {
@@ -329,7 +329,7 @@ export async function publishUserLoggedOut(userId, email, correlationId) {
       eventType: 'user.logged_out',
       userId,
       error: error.message,
-      correlationId,
+      traceId,
     });
     // Don't throw - graceful degradation
   }

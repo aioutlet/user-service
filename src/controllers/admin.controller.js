@@ -20,7 +20,8 @@ export const getStats = asyncHandler(async (req, res, _next) => {
 
   logger.info('Fetching comprehensive user statistics', {
     userId: req.user?._id,
-    correlationId: req.correlationId,
+    traceId: req.traceId,
+    spanId: req.spanId,
     includeRecent,
     recentLimit,
     period,
@@ -136,7 +137,8 @@ export const getStats = asyncHandler(async (req, res, _next) => {
 
   logger.info('Comprehensive user statistics retrieved successfully', {
     userId: req.user?._id,
-    correlationId: req.correlationId,
+    traceId: req.traceId,
+    spanId: req.spanId,
     stats: {
       total: stats.total,
       active: stats.active,
@@ -207,7 +209,8 @@ export const createUser = asyncHandler(async (req, res, next) => {
     logger.info('User created by admin', {
       userId: user._id,
       adminId: req.user?._id,
-      correlationId: req.correlationId,
+      traceId: req.traceId,
+      spanId: req.spanId,
     });
 
     // Extract client IP and User-Agent for event publishing
@@ -219,10 +222,10 @@ export const createUser = asyncHandler(async (req, res, next) => {
       req.socket?.remoteAddress ||
       'unknown';
     const userAgent = req.headers['user-agent'] || 'unknown';
-    const correlationId = req.headers['x-correlation-id'] || req.correlationId;
+    const traceId = req.traceId;
 
     // Publish user.created event
-    await userEventPublisher.publishUserCreated(user, correlationId, clientIP, userAgent);
+    await userEventPublisher.publishUserCreated(user, traceId, clientIP, userAgent);
 
     // Return user without password
     const userResponse = user.toObject();
@@ -233,7 +236,8 @@ export const createUser = asyncHandler(async (req, res, next) => {
     logger.error('Failed to create user', {
       error: err.message,
       adminId: req.user?._id,
-      correlationId: req.correlationId,
+      traceId: req.traceId,
+      spanId: req.spanId,
     });
     next(err);
   }
@@ -275,8 +279,8 @@ export const updateUser = asyncHandler(async (req, res, next) => {
     const userAgent = req.headers['user-agent'] || 'unknown';
 
     // Publish user.updated event to message broker (admin update)
-    const correlationId = req.headers['x-correlation-id'] || req.correlationId;
-    await publishUserUpdated(result, correlationId, req.user?._id?.toString(), clientIP, userAgent);
+    const traceId = req.traceId;
+    await publishUserUpdated(result, traceId, req.user?._id?.toString(), clientIP, userAgent);
 
     res.json(result);
   } catch (err) {

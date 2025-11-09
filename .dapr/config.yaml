@@ -7,7 +7,12 @@ spec:
   features:
     - name: SchedulerReminders
       enabled: false
+  # Distributed Tracing Configuration
+  # Dapr automatically propagates W3C Trace Context via 'traceparent' header
+  # Services can extract traceId and spanId from this header for application logging
   tracing:
-    samplingRate: '1'
+    samplingRate: '1' # 100% sampling - adjust for production (e.g., '0.1' for 10%)
+    # For local development with Zipkin:
     zipkin:
       endpointAddress: 'http://localhost:9411/api/v2/spans'
+    # For production with Azure Application Insights, configure via environment or component

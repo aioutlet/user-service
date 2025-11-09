@@ -10,7 +10,7 @@ import adminRoutes from './routes/admin.routes.js';
 import homeRoutes from './routes/home.routes.js';
 import userRoutes from './routes/user.routes.js';
 import operationalRoutes from './routes/operational.routes.js';
-import correlationIdMiddleware from './middlewares/correlationId.middleware.js';
+import traceContextMiddleware from './middlewares/traceContext.middleware.js';
 
 // Validate configuration before starting
 validateConfig();
@@ -30,7 +30,7 @@ app.use(
   })
 );
 
-app.use(correlationIdMiddleware); // Add correlation ID middleware first
+app.use(traceContextMiddleware); // Add trace context middleware first
 app.use(express.json());
 app.use(cookieParser());
 
@@ -46,11 +46,13 @@ app.use('/api/admin/users', adminRoutes);
 // Centralized error handler for consistent error responses
 app.use((err, req, res, _next) => {
   const status = err.status || 500;
-  const correlationId = req.correlationId || 'no-correlation';
+  const traceId = req.traceId || 'no-trace';
+  const spanId = req.spanId || 'no-span';
 
   // Log the error with full details
   logger.error(`Request failed: ${req.method} ${req.originalUrl} - ${err.message || 'Unknown error'}`, {
-    correlationId,
+    traceId,
+    spanId,
     method: req.method,
     url: req.originalUrl,
     status,

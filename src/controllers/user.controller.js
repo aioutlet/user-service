@@ -31,7 +31,7 @@ export const createUser = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse('Email already exists', 409, 'EMAIL_EXISTS'));
   }
 
-  logger.info('Creating new user', { email, correlationId: req.correlationId });
+  logger.info('Creating new user', { email, traceId: req.traceId, spanId: req.spanId });
 
   try {
     // Only create user with basic fields - nested documents should be added via specific endpoints
@@ -61,10 +61,9 @@ export const createUser = asyncHandler(async (req, res, next) => {
       userId: user._id,
       email: user.email,
       hasEmailVerified: user.isEmailVerified,
-      correlationId: req.correlationId,
-    });
-
-    // Extract client IP address
+      traceId: req.traceId,
+      spanId: req.spanId,
+    }); // Extract client IP address
     const clientIP =
       req.ip ||
       req.connection?.remoteAddress ||
@@ -77,8 +76,8 @@ export const createUser = asyncHandler(async (req, res, next) => {
     const userAgent = req.headers['user-agent'] || 'unknown';
 
     // Publish user.created event to message broker
-    const correlationId = req.headers['x-correlation-id'] || req.correlationId;
-    await publishUserCreated(user, correlationId, clientIP, userAgent);
+    const traceId = req.traceId;
+    await publishUserCreated(user, traceId, clientIP, userAgent);
 
     res.status(201).json(user);
   } catch (err) {
@@ -121,8 +120,8 @@ export const updateUser = asyncHandler(async (req, res, next) => {
     const userAgent = req.headers['user-agent'] || 'unknown';
 
     // Publish user.updated event to message broker (self-update)
-    const correlationId = req.headers['x-correlation-id'] || req.correlationId;
-    await publishUserUpdated(result, correlationId, req.user._id.toString(), clientIP, userAgent);
+    const traceId = req.traceId;
+    await publishUserUpdated(result, traceId, req.user._id.toString(), clientIP, userAgent);
 
     res.json(result);
   } catch (err) {

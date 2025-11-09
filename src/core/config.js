@@ -32,7 +32,6 @@ export default {
   observability: {
     enableTracing: process.env.ENABLE_TRACING === 'true',
     otlpEndpoint: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318/v1/traces',
-    correlationIdHeader: process.env.CORRELATION_ID_HEADER || 'x-correlation-id',
   },
 
   dapr: {
