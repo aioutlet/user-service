@@ -2,15 +2,28 @@
  * Integration tests for Dapr event publishing
  * Tests CloudEvents schema compliance and event payloads
  */
-import { describe, test, expect, jest, beforeEach } from '@jest/globals';
+import { describe, test, expect, jest, beforeEach, beforeAll, afterAll } from '@jest/globals';
 
-// Mock the daprClient from core/dapr.js
-const mockPublishEvent = jest.fn().mockResolvedValue(undefined);
+// Enable Dapr for these tests
+let originalDaprEnabled;
+beforeAll(() => {
+  originalDaprEnabled = process.env.DAPR_ENABLED;
+  process.env.DAPR_ENABLED = 'true';
+});
 
-jest.unstable_mockModule('../../src/core/dapr.js', () => ({
-  daprClient: {
-    publishEvent: mockPublishEvent,
-  },
+afterAll(() => {
+  process.env.DAPR_ENABLED = originalDaprEnabled;
+});
+
+// Mock the DaprClient from @dapr/dapr
+const mockPublish = jest.fn().mockResolvedValue(undefined);
+
+jest.unstable_mockModule('@dapr/dapr', () => ({
+  DaprClient: jest.fn().mockImplementation(() => ({
+    pubsub: {
+      publish: mockPublish,
+    },
+  })),
 }));
 
 // Import after mocking
@@ -18,7 +31,7 @@ const userEventPublisher = await import('../../src/events/publisher.js');
 
 describe('User Event Publisher - CloudEvents Compliance', () => {
   beforeEach(() => {
-    mockPublishEvent.mockClear();
+    mockPublish.mockClear();
   });
 
   describe('publishUserCreated', () => {
@@ -39,8 +52,8 @@ describe('User Event Publisher - CloudEvents Compliance', () => {
 
       await userEventPublisher.publishUserCreated(testUser, 'test-corr-id-123', '192.168.1.1', 'Mozilla/5.0');
 
-      expect(mockPublishEvent).toHaveBeenCalledTimes(1);
-      const [pubsubName, topic, eventData] = mockPublishEvent.mock.calls[0];
+      expect(mockPublish).toHaveBeenCalledTimes(1);
+      const [pubsubName, topic, eventData] = mockPublish.mock.calls[0];
 
       // Validate pub/sub configuration
       expect(pubsubName).toBe('user-pubsub');
@@ -70,7 +83,7 @@ describe('User Event Publisher - CloudEvents Compliance', () => {
       expect(eventData.metadata.correlationId).toBe('test-corr-id-123');
       expect(eventData.metadata.ipAddress).toBe('192.168.1.1');
       expect(eventData.metadata.userAgent).toBe('Mozilla/5.0');
-      expect(eventData.metadata.environment).toBe('development');
+      expect(eventData.metadata.environment).toBe('test');
     });
 
     test('should handle missing optional fields gracefully', async () => {
@@ -88,15 +101,15 @@ describe('User Event Publisher - CloudEvents Compliance', () => {
 
       await userEventPublisher.publishUserCreated(testUser, 'test-corr-id', null, null);
 
-      expect(mockPublishEvent).toHaveBeenCalledTimes(1);
-      const [, , eventData] = mockPublishEvent.mock.calls[0];
+      expect(mockPublish).toHaveBeenCalledTimes(1);
+      const [, , eventData] = mockPublish.mock.calls[0];
 
       expect(eventData.metadata.ipAddress).toBeNull();
       expect(eventData.metadata.userAgent).toBeNull();
     });
 
     test('should not throw on publish failure', async () => {
-      mockPublishEvent.mockRejectedValueOnce(new Error('Connection failed'));
+      mockPublish.mockRejectedValueOnce(new Error('Connection failed'));
 
       const testUser = {
         _id: { toString: () => '507f1f77bcf86cd799439011' },
@@ -139,8 +152,8 @@ describe('User Event Publisher - CloudEvents Compliance', () => {
         'Chrome/120.0'
       );
 
-      expect(mockPublishEvent).toHaveBeenCalledTimes(1);
-      const [pubsubName, topic, eventData] = mockPublishEvent.mock.calls[0];
+      expect(mockPublish).toHaveBeenCalledTimes(1);
+      const [pubsubName, topic, eventData] = mockPublish.mock.calls[0];
 
       expect(pubsubName).toBe('user-pubsub');
       expect(topic).toBe('user.updated');
@@ -156,8 +169,8 @@ describe('User Event Publisher - CloudEvents Compliance', () => {
     test('should publish CloudEvents 1.0 compliant event', async () => {
       await userEventPublisher.publishUserDeleted('507f1f77bcf86cd799439011', 'test-corr-id-789');
 
-      expect(mockPublishEvent).toHaveBeenCalledTimes(1);
-      const [pubsubName, topic, eventData] = mockPublishEvent.mock.calls[0];
+      expect(mockPublish).toHaveBeenCalledTimes(1);
+      const [pubsubName, topic, eventData] = mockPublish.mock.calls[0];
 
       expect(pubsubName).toBe('user-pubsub');
       expect(topic).toBe('user.deleted');
@@ -178,8 +191,8 @@ describe('User Event Publisher - CloudEvents Compliance', () => {
         'Safari/17.0'
       );
 
-      expect(mockPublishEvent).toHaveBeenCalledTimes(1);
-      const [pubsubName, topic, eventData] = mockPublishEvent.mock.calls[0];
+      expect(mockPublish).toHaveBeenCalledTimes(1);
+      const [pubsubName, topic, eventData] = mockPublish.mock.calls[0];
 
       expect(pubsubName).toBe('user-pubsub');
       expect(topic).toBe('user.logged_in');
@@ -200,8 +213,8 @@ describe('User Event Publisher - CloudEvents Compliance', () => {
         'test-corr-id-logout'
       );
 
-      expect(mockPublishEvent).toHaveBeenCalledTimes(1);
-      const [pubsubName, topic, eventData] = mockPublishEvent.mock.calls[0];
+      expect(mockPublish).toHaveBeenCalledTimes(1);
+      const [pubsubName, topic, eventData] = mockPublish.mock.calls[0];
 
       expect(pubsubName).toBe('user-pubsub');
       expect(topic).toBe('user.logged_out');
@@ -230,9 +243,9 @@ describe('User Event Publisher - CloudEvents Compliance', () => {
       await userEventPublisher.publishUserCreated(testUser, 'corr-2');
       await userEventPublisher.publishUserCreated(testUser, 'corr-3');
 
-      expect(mockPublishEvent).toHaveBeenCalledTimes(3);
+      expect(mockPublish).toHaveBeenCalledTimes(3);
 
-      const eventIds = mockPublishEvent.mock.calls.map((call) => call[2].id);
+      const eventIds = mockPublish.mock.calls.map((call) => call[2].id);
       const uniqueIds = new Set(eventIds);
 
       expect(uniqueIds.size).toBe(3); // All IDs should be unique

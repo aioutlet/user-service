@@ -1,3 +1,4 @@
+import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import * as userService from '../../../src/services/user.service.js';
 import User from '../../../src/models/user.model.js';
 import userValidator from '../../../src/validators/user.validator.js';
@@ -7,6 +8,9 @@ jest.mock('../../../src/models/user.model.js');
 jest.mock('../../../src/validators/user.validator.js');
 
 describe('User Service', () => {
+  // Valid MongoDB ObjectId for testing
+  const validUserId = '507f1f77bcf86cd799439011';
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -14,7 +18,7 @@ describe('User Service', () => {
   describe('getUserById', () => {
     it('should return user when found', async () => {
       const mockUser = {
-        _id: '123',
+        _id: validUserId,
         email: 'test@example.com',
         firstName: 'John',
         lastName: 'Doe',
@@ -22,30 +26,39 @@ describe('User Service', () => {
 
       User.findById = jest.fn().mockResolvedValue(mockUser);
 
-      const result = await userService.getUserById('123');
+      const result = await userService.getUserById(validUserId);
 
-      expect(User.findById).toHaveBeenCalledWith('123', '-password');
+      expect(User.findById).toHaveBeenCalledWith(validUserId, '-password');
       expect(result).toEqual(mockUser);
     });
 
     it('should exclude password field', async () => {
       const mockUser = {
-        _id: '123',
+        _id: validUserId,
         email: 'test@example.com',
       };
 
       User.findById = jest.fn().mockResolvedValue(mockUser);
 
-      await userService.getUserById('123');
+      await userService.getUserById(validUserId);
 
-      expect(User.findById).toHaveBeenCalledWith('123', '-password');
+      expect(User.findById).toHaveBeenCalledWith(validUserId, '-password');
+    });
+
+    it('should throw 400 for invalid user ID format', async () => {
+      await expect(userService.getUserById('invalid-id')).rejects.toThrow(ErrorResponse);
+      await expect(userService.getUserById('invalid-id')).rejects.toMatchObject({
+        message: 'Invalid user ID format',
+        statusCode: 400,
+        code: 'INVALID_USER_ID',
+      });
     });
 
     it('should throw 404 when user not found', async () => {
       User.findById = jest.fn().mockResolvedValue(null);
 
-      await expect(userService.getUserById('123')).rejects.toThrow(ErrorResponse);
-      await expect(userService.getUserById('123')).rejects.toMatchObject({
+      await expect(userService.getUserById(validUserId)).rejects.toThrow(ErrorResponse);
+      await expect(userService.getUserById(validUserId)).rejects.toMatchObject({
         message: 'User not found',
         statusCode: 404,
         code: 'USER_NOT_FOUND',
@@ -55,7 +68,7 @@ describe('User Service', () => {
     it('should propagate database errors', async () => {
       User.findById = jest.fn().mockRejectedValue(new Error('Database connection failed'));
 
-      await expect(userService.getUserById('123')).rejects.toThrow('Database connection failed');
+      await expect(userService.getUserById(validUserId)).rejects.toThrow('Database connection failed');
     });
   });
 
@@ -78,17 +91,17 @@ describe('User Service', () => {
         lastName: 'Smith',
       };
       const mockUpdatedUser = {
-        _id: '123',
+        _id: validUserId,
         ...updateFields,
       };
 
       User.findByIdAndUpdate = jest.fn().mockResolvedValue(mockUpdatedUser);
 
-      const result = await userService.updateUser('123', updateFields, { isAdmin: false });
+      const result = await userService.updateUser(validUserId, updateFields, { isAdmin: false });
 
       expect(userValidator.isValidFirstName).toHaveBeenCalledWith('Jane');
       expect(userValidator.isValidLastName).toHaveBeenCalledWith('Smith');
-      expect(User.findByIdAndUpdate).toHaveBeenCalledWith('123', updateFields, { new: true });
+      expect(User.findByIdAndUpdate).toHaveBeenCalledWith(validUserId, updateFields, { new: true });
       expect(result).toEqual(mockUpdatedUser);
     });
 
@@ -98,13 +111,13 @@ describe('User Service', () => {
         tier: 'platinum',
       };
       const mockUpdatedUser = {
-        _id: '123',
+        _id: validUserId,
         ...updateFields,
       };
 
       User.findByIdAndUpdate = jest.fn().mockResolvedValue(mockUpdatedUser);
 
-      const result = await userService.updateUser('123', updateFields, { isAdmin: true });
+      const result = await userService.updateUser(validUserId, updateFields, { isAdmin: true });
 
       expect(userValidator.isValidRoles).toHaveBeenCalledWith(['admin']);
       expect(userValidator.isValidTier).toHaveBeenCalledWith('platinum');
@@ -117,21 +130,21 @@ describe('User Service', () => {
         roles: ['admin'], // Will be filtered out for non-admin
       };
 
-      User.findByIdAndUpdate = jest.fn().mockResolvedValue({ _id: '123', firstName: 'Jane' });
+      User.findByIdAndUpdate = jest.fn().mockResolvedValue({ _id: validUserId, firstName: 'Jane' });
 
-      await userService.updateUser('123', updateFields, { isAdmin: false });
+      await userService.updateUser(validUserId, updateFields, { isAdmin: false });
 
       // Should only call firstName validation, not roles (filtered out)
       expect(userValidator.isValidFirstName).toHaveBeenCalledWith('Jane');
       expect(userValidator.isValidRoles).not.toHaveBeenCalled();
-      expect(User.findByIdAndUpdate).toHaveBeenCalledWith('123', { firstName: 'Jane' }, { new: true });
+      expect(User.findByIdAndUpdate).toHaveBeenCalledWith(validUserId, { firstName: 'Jane' }, { new: true });
     });
 
     it('should throw error when no valid fields provided', async () => {
-      await expect(userService.updateUser('123', { invalid: 'field' }, { isAdmin: false })).rejects.toThrow(
+      await expect(userService.updateUser(validUserId, { invalid: 'field' }, { isAdmin: false })).rejects.toThrow(
         ErrorResponse
       );
-      await expect(userService.updateUser('123', { invalid: 'field' }, { isAdmin: false })).rejects.toMatchObject({
+      await expect(userService.updateUser(validUserId, { invalid: 'field' }, { isAdmin: false })).rejects.toMatchObject({
         message: 'No updatable fields provided',
         statusCode: 400,
         code: 'NO_UPDATABLE_FIELDS',
@@ -141,9 +154,9 @@ describe('User Service', () => {
     it('should validate before updating', async () => {
       const updateFields = { firstName: 'Jane' };
 
-      User.findByIdAndUpdate = jest.fn().mockResolvedValue({ _id: '123', ...updateFields });
+      User.findByIdAndUpdate = jest.fn().mockResolvedValue({ _id: validUserId, ...updateFields });
 
-      await userService.updateUser('123', updateFields, { isAdmin: false });
+      await userService.updateUser(validUserId, updateFields, { isAdmin: false });
 
       expect(userValidator.isValidFirstName).toHaveBeenCalledWith('Jane');
       expect(User.findByIdAndUpdate).toHaveBeenCalled();
@@ -155,33 +168,33 @@ describe('User Service', () => {
         password: 'newPassword123',
       };
       const mockUser = {
-        _id: '123',
+        _id: validUserId,
         password: 'oldHashedPassword',
         save: jest.fn().mockResolvedValue(true),
       };
 
       User.findById = jest.fn().mockResolvedValue(mockUser);
-      User.findByIdAndUpdate = jest.fn().mockResolvedValue({ _id: '123', firstName: 'Jane' });
+      User.findByIdAndUpdate = jest.fn().mockResolvedValue({ _id: validUserId, firstName: 'Jane' });
 
-      await userService.updateUser('123', updateFields, { isAdmin: false });
+      await userService.updateUser(validUserId, updateFields, { isAdmin: false });
 
-      expect(User.findById).toHaveBeenCalledWith('123');
+      expect(User.findById).toHaveBeenCalledWith(validUserId);
       expect(mockUser.password).toBe('newPassword123');
       expect(mockUser.save).toHaveBeenCalled();
-      expect(User.findByIdAndUpdate).toHaveBeenCalledWith('123', { firstName: 'Jane' }, { new: true });
+      expect(User.findByIdAndUpdate).toHaveBeenCalledWith(validUserId, { firstName: 'Jane' }, { new: true });
     });
 
     it('should allow admin to set password for social account', async () => {
       const updateFields = { password: 'newPassword123' };
       const mockUser = {
-        _id: '123',
+        _id: validUserId,
         password: null, // Social account
         save: jest.fn().mockResolvedValue(true),
       };
 
       User.findById = jest.fn().mockResolvedValue(mockUser);
 
-      const result = await userService.updateUser('123', updateFields, { isAdmin: true });
+      const result = await userService.updateUser(validUserId, updateFields, { isAdmin: true });
 
       expect(mockUser.password).toBe('newPassword123');
       expect(mockUser.save).toHaveBeenCalled();
@@ -191,14 +204,14 @@ describe('User Service', () => {
     it('should return message when only password is updated', async () => {
       const updateFields = { password: 'newPassword123' };
       const mockUser = {
-        _id: '123',
+        _id: validUserId,
         password: 'oldPassword',
         save: jest.fn().mockResolvedValue(true),
       };
 
       User.findById = jest.fn().mockResolvedValue(mockUser);
 
-      const result = await userService.updateUser('123', updateFields, { isAdmin: false });
+      const result = await userService.updateUser(validUserId, updateFields, { isAdmin: false });
 
       expect(result).toEqual({ message: 'Password updated successfully' });
       expect(User.findByIdAndUpdate).not.toHaveBeenCalled();
@@ -209,8 +222,8 @@ describe('User Service', () => {
 
       User.findById = jest.fn().mockResolvedValue(null);
 
-      await expect(userService.updateUser('123', updateFields, { isAdmin: false })).rejects.toThrow(ErrorResponse);
-      await expect(userService.updateUser('123', updateFields, { isAdmin: false })).rejects.toMatchObject({
+      await expect(userService.updateUser(validUserId, updateFields, { isAdmin: false })).rejects.toThrow(ErrorResponse);
+      await expect(userService.updateUser(validUserId, updateFields, { isAdmin: false })).rejects.toMatchObject({
         message: 'User not found',
         statusCode: 404,
         code: 'USER_NOT_FOUND',
@@ -222,8 +235,8 @@ describe('User Service', () => {
 
       User.findByIdAndUpdate = jest.fn().mockResolvedValue(null);
 
-      await expect(userService.updateUser('123', updateFields, { isAdmin: false })).rejects.toThrow(ErrorResponse);
-      await expect(userService.updateUser('123', updateFields, { isAdmin: false })).rejects.toMatchObject({
+      await expect(userService.updateUser(validUserId, updateFields, { isAdmin: false })).rejects.toThrow(ErrorResponse);
+      await expect(userService.updateUser(validUserId, updateFields, { isAdmin: false })).rejects.toMatchObject({
         message: 'User not found',
         statusCode: 404,
         code: 'USER_NOT_FOUND',
@@ -237,14 +250,14 @@ describe('User Service', () => {
         displayName: 'Jane S.',
       };
       const mockUpdatedUser = {
-        _id: '123',
+        _id: validUserId,
         email: 'test@example.com',
         ...updateFields,
       };
 
       User.findByIdAndUpdate = jest.fn().mockResolvedValue(mockUpdatedUser);
 
-      const result = await userService.updateUser('123', updateFields, { isAdmin: false });
+      const result = await userService.updateUser(validUserId, updateFields, { isAdmin: false });
 
       expect(result).toEqual(mockUpdatedUser);
     });
@@ -253,22 +266,22 @@ describe('User Service', () => {
   describe('deleteUser', () => {
     it('should delete user when found', async () => {
       const mockUser = {
-        _id: '123',
+        _id: validUserId,
         email: 'test@example.com',
       };
 
       User.findByIdAndDelete = jest.fn().mockResolvedValue(mockUser);
 
-      await userService.deleteUser('123');
+      await userService.deleteUser(validUserId);
 
-      expect(User.findByIdAndDelete).toHaveBeenCalledWith('123');
+      expect(User.findByIdAndDelete).toHaveBeenCalledWith(validUserId);
     });
 
     it('should throw 404 when user not found', async () => {
       User.findByIdAndDelete = jest.fn().mockResolvedValue(null);
 
-      await expect(userService.deleteUser('123')).rejects.toThrow(ErrorResponse);
-      await expect(userService.deleteUser('123')).rejects.toMatchObject({
+      await expect(userService.deleteUser(validUserId)).rejects.toThrow(ErrorResponse);
+      await expect(userService.deleteUser(validUserId)).rejects.toMatchObject({
         message: 'User not found',
         statusCode: 404,
         code: 'USER_NOT_FOUND',
@@ -278,7 +291,7 @@ describe('User Service', () => {
     it('should propagate database errors', async () => {
       User.findByIdAndDelete = jest.fn().mockRejectedValue(new Error('Database error'));
 
-      await expect(userService.deleteUser('123')).rejects.toThrow('Database error');
+      await expect(userService.deleteUser(validUserId)).rejects.toThrow('Database error');
     });
   });
 

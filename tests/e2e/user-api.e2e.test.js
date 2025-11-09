@@ -2,7 +2,7 @@
 // Tests individual user-service endpoints in isolation
 
 import axios from 'axios';
-import { generateTestUser, createUser, getUserByEmail, deleteUser, sleep } from '../../shared/helpers/user.js';
+import { generateTestUser, createUser, getUserByEmail, deleteUser, sleep } from '../shared/helpers/user.js';
 
 const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://localhost:5000';
 const USER_SERVICE_HEALTH_URL = process.env.USER_SERVICE_HEALTH_URL || 'http://localhost:5000/health';
