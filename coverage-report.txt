@@ -1,0 +1,54 @@
+
+> user-service@1.0.0 test:coverage
+> node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js --coverage --runInBand
+
+------------------------------|---------|----------|---------|---------|-----------------------------------------------------------------------
+File                          | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                                                     
+------------------------------|---------|----------|---------|---------|-----------------------------------------------------------------------
+All files                     |   35.91 |    44.79 |   38.34 |   35.82 |                                                                       
+ src                          |       0 |        0 |       0 |       0 |                                                                       
+  app.js                      |       0 |        0 |       0 |       0 | 16-96                                                                 
+  server.js                   |       0 |      100 |       0 |       0 | 8-25                                                                  
+ src/controllers              |   12.96 |     6.37 |      16 |   13.05 |                                                                       
+  admin.controller.js         |       0 |        0 |       0 |       0 | 16-297                                                                
+  home.controller.js          |       0 |        0 |       0 |       0 | 2-11                                                                  
+  operational.controller.js   |       0 |        0 |       0 |       0 | 16-263                                                                
+  user.address.controller.js  |       0 |        0 |       0 |       0 | 17-132                                                                
+  user.controller.js          |   57.73 |    28.26 |      80 |   57.73 | 51,54,58-83,86,96-100,113-127,139-144,183,187,201-220,232,243,249,257 
+  user.payment.controller.js  |       0 |        0 |       0 |       0 | 17-211                                                                
+  user.wishlist.controller.js |       0 |        0 |       0 |       0 | 17-138                                                                
+ src/core                     |   27.02 |    37.77 |      32 |   27.02 |                                                                       
+  config.js                   |       0 |        0 |       0 |       0 |                                                                       
+  dapr.js                     |       0 |        0 |       0 |       0 | 11-246                                                                
+  errors.js                   |     100 |      100 |     100 |     100 |                                                                       
+  logger.js                   |      65 |     37.2 |      50 |      65 | 13-25,32,50,59,124-128                                                
+ src/database                 |       0 |        0 |       0 |       0 |                                                                       
+  db.js                       |       0 |        0 |       0 |       0 | 5-62                                                                  
+ src/events                   |   71.15 |    47.82 |     100 |   71.15 |                                                                       
+  publisher.js                |   71.15 |    47.82 |     100 |   71.15 | 18,41-46,110-115,157,177-182,212,235-240,273,294-299,330              
+ src/middlewares              |    75.3 |    79.16 |   58.33 |   75.94 |                                                                       
+  asyncHandler.js             |     100 |      100 |     100 |     100 |                                                                       
+  auth.middleware.js          |   67.74 |    73.68 |    37.5 |   68.85 | 78-127,140,166-168                                                    
+  correlationId.middleware.js |     100 |      100 |     100 |     100 |                                                                       
+ src/models                   |      25 |        0 |       0 |      25 |                                                                       
+  user.model.js               |      25 |        0 |       0 |      25 | 74-101                                                                
+ src/routes                   |       0 |      100 |     100 |       0 |                                                                       
+  admin.routes.js             |       0 |      100 |     100 |       0 | 5-18                                                                  
+  home.routes.js              |       0 |      100 |     100 |       0 | 4-8                                                                   
+  operational.routes.js       |       0 |      100 |     100 |       0 | 4-10                                                                  
+  user.routes.js              |       0 |      100 |     100 |       0 | 25-53                                                                 
+ src/schemas                  |   44.44 |        0 |       0 |   44.44 |                                                                       
+  address.schema.js           |     100 |      100 |     100 |     100 |                                                                       
+  payment.schema.js           |   16.66 |        0 |       0 |   16.66 | 29-37                                                                 
+  preferences.schema.js       |     100 |      100 |     100 |     100 |                                                                       
+  wishlist.schema.js          |     100 |      100 |     100 |     100 |                                                                       
+ src/services                 |   48.59 |    42.72 |   36.36 |   49.52 |                                                                       
+  dapr.secretManager.js       |       0 |        0 |       0 |       0 | 15-177                                                                
+  user.service.js             |   82.53 |    73.43 |     100 |   82.53 | 51-52,58,68,78,83-84,94,100,103,114                                   
+ src/validators               |   66.92 |    73.22 |   52.63 |    67.2 |                                                                       
+  config.validator.js         |       0 |        0 |       0 |       0 | 15-291                                                                
+  user.address.validator.js   |   97.14 |       98 |     100 |   96.96 | 76                                                                    
+  user.payment.validator.js   |   97.77 |    96.29 |     100 |   97.77 | 56                                                                    
+  user.validator.js           |    90.9 |    90.36 |   81.81 |    90.9 | 47,68,120-123                                                         
+  user.wishlist.validator.js  |   97.87 |    98.07 |     100 |   97.56 | 82                                                                    
+------------------------------|---------|----------|---------|---------|-----------------------------------------------------------------------

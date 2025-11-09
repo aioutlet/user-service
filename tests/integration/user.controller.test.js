@@ -1,4 +1,45 @@
-import {
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import httpMocks from 'node-mocks-http';
+
+// Mock the event publisher
+const mockPublishUserCreated = jest.fn().mockResolvedValue(undefined);
+const mockPublishUserUpdated = jest.fn().mockResolvedValue(undefined);
+const mockPublishUserDeleted = jest.fn().mockResolvedValue(undefined);
+const mockPublishUserLoggedIn = jest.fn().mockResolvedValue(undefined);
+const mockPublishUserLoggedOut = jest.fn().mockResolvedValue(undefined);
+
+jest.unstable_mockModule('../../src/events/publisher.js', () => ({
+  publishUserCreated: mockPublishUserCreated,
+  publishUserUpdated: mockPublishUserUpdated,
+  publishUserDeleted: mockPublishUserDeleted,
+  publishUserLoggedIn: mockPublishUserLoggedIn,
+  publishUserLoggedOut: mockPublishUserLoggedOut,
+}));
+
+// Mock User model and userService
+jest.unstable_mockModule('../../src/models/user.model.js', () => ({
+  default: {
+    findOne: jest.fn(),
+    findById: jest.fn(),
+    findByIdAndUpdate: jest.fn(),
+    findByIdAndDelete: jest.fn(),
+    create: jest.fn(),
+  },
+}));
+
+jest.unstable_mockModule('../../src/services/user.service.js', () => ({
+  getUserById: jest.fn(),
+  getUserByEmail: jest.fn(),
+  updateUser: jest.fn(),
+  deleteUser: jest.fn(),
+}));
+
+// Import after mocking
+const userController = await import('../../src/controllers/user.controller.js');
+const User = (await import('../../src/models/user.model.js')).default;
+const userService = await import('../../src/services/user.service.js');
+
+const {
   createUser,
   getUser,
   getUserById,
@@ -9,24 +50,7 @@ import {
   findByEmail,
   updateUserById,
   updateUserPasswordById,
-} from '../../../src/controllers/user.controller.js';
-import User from '../../../src/models/user.model.js';
-import * as userService from '../../../src/services/user.service.js';
-import httpMocks from 'node-mocks-http';
-
-jest.mock('../../../src/models/user.model.js');
-jest.mock('../../../src/services/user.service.js');
-jest.mock('../../../src/services/messageBrokerServiceClient.js', () => ({
-  __esModule: true,
-  default: {
-    publishEvent: jest.fn(async () => undefined),
-    publishUserCreated: jest.fn(async () => undefined),
-    publishUserUpdated: jest.fn(async () => undefined),
-    publishUserDeleted: jest.fn(async () => undefined),
-    publishUserLoggedIn: jest.fn(async () => undefined),
-    publishUserLoggedOut: jest.fn(async () => undefined),
-  },
-}));
+} = userController;
 
 const next = jest.fn();
 
