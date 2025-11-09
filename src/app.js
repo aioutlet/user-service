@@ -1,8 +1,9 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
+import mongoose from 'mongoose';
 
-import validateConfig, { getConfigArray } from './validators/config.validator.js';
+import validateConfig from './validators/config.validator.js';
 import config from './core/config.js';
 import logger from './core/logger.js';
 import connectDB from './database/db.js';
@@ -11,6 +12,7 @@ import homeRoutes from './routes/home.routes.js';
 import userRoutes from './routes/user.routes.js';
 import operationalRoutes from './routes/operational.routes.js';
 import traceContextMiddleware from './middlewares/traceContext.middleware.js';
+import { errorHandler } from './middlewares/errorHandler.middleware.js';
 
 // Validate configuration before starting
 validateConfig();
@@ -21,13 +23,11 @@ const app = express();
 app.set('trust proxy', true);
 
 // Apply CORS before other middlewares
-const corsOrigins = getConfigArray('CORS_ORIGINS');
-
 app.use(
   cors({
-    origin: corsOrigins,
+    origin: config.cors.origins,
     credentials: true,
-  })
+  }),
 );
 
 app.use(traceContextMiddleware); // Add trace context middleware first
@@ -44,33 +44,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/admin/users', adminRoutes);
 
 // Centralized error handler for consistent error responses
-app.use((err, req, res, _next) => {
-  const status = err.status || 500;
-  const traceId = req.traceId || 'no-trace';
-  const spanId = req.spanId || 'no-span';
-
-  // Log the error with full details
-  logger.error(`Request failed: ${req.method} ${req.originalUrl} - ${err.message || 'Unknown error'}`, {
-    traceId,
-    spanId,
-    method: req.method,
-    url: req.originalUrl,
-    status,
-    errorCode: err.code || 'INTERNAL_ERROR',
-    errorMessage: err.message,
-    errorStack: err.stack,
-    userId: req.user?._id,
-  });
-
-  res.status(status).json({
-    error: {
-      code: err.code || 'INTERNAL_ERROR',
-      message: err.message || 'Internal server error',
-      details: err.details || null,
-      traceId: req.traceId || null,
-    },
-  });
-});
+app.use(errorHandler);
 
 const PORT = config.service.port;
 const HOST = config.service.host;
@@ -88,8 +62,15 @@ app.listen(PORT, HOST, () => {
 });
 
 // Graceful shutdown
-const gracefulShutdown = (signal) => {
+const gracefulShutdown = async (signal) => {
   logger.info(`Received ${signal}. Starting graceful shutdown...`);
+
+  try {
+    await mongoose.connection.close();
+    logger.info('Database connection closed');
+  } catch (err) {
+    logger.error('Error during graceful shutdown', { error: err.message });
+  }
 
   process.exit(0);
 };
