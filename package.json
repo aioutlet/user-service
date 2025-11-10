@@ -42,7 +42,7 @@
     "@opentelemetry/auto-instrumentations-node": "^0.62.1",
     "@opentelemetry/exporter-trace-otlp-http": "^0.203.0",
     "@opentelemetry/sdk-node": "^0.203.0",
-    "axios": "^1.12.2",
+    "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
     "colors": "^1.4.0",
     "cookie-parser": "^1.4.7",
