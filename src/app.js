@@ -30,7 +30,7 @@ await connectDB();
 
 // Routes
 app.use('/api', homeRoutes);
-app.use('/api', operationalRoutes);
+app.use(operationalRoutes); // Operational endpoints at root level (standard practice)
 app.use('/api/users', userRoutes);
 app.use('/api/admin/users', adminRoutes);
 
