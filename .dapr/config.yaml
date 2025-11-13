@@ -13,7 +13,8 @@ spec:
   tracing:
     samplingRate: '1' # 100% sampling - adjust for production (e.g., '0.1' for 10%)
     # OpenTelemetry (OTLP) - Modern tracing protocol
+    # Sends to OTEL Collector which exports to Jaeger for visualization
     otel:
-      endpointAddress: 'http://localhost:4318'
+      endpointAddress: 'localhost:4318'
       isSecure: false
       protocol: 'http'

@@ -1,6 +1,5 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
-import cors from 'cors';
 import mongoose from 'mongoose';
 
 import validateConfig from './validators/config.validator.js';
@@ -21,14 +20,6 @@ const app = express();
 // Trust proxy for accurate IP address extraction
 // This enables req.ip to work correctly behind reverse proxies
 app.set('trust proxy', true);
-
-// Apply CORS before other middlewares
-app.use(
-  cors({
-    origin: config.cors.origins,
-    credentials: true,
-  }),
-);
 
 app.use(traceContextMiddleware); // Add trace context middleware first
 app.use(express.json());
