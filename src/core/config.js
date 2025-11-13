@@ -15,12 +15,6 @@ export default {
     nodeEnv: process.env.NODE_ENV || 'development',
   },
 
-  cors: {
-    origins: process.env.CORS_ORIGINS
-      ? process.env.CORS_ORIGINS.split(',')
-      : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3010'],
-  },
-
   logging: {
     level: process.env.LOG_LEVEL || 'debug',
     format: process.env.LOG_FORMAT || 'console',
