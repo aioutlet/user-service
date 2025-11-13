@@ -64,36 +64,56 @@ src/
 
 ### Prerequisites
 
-- Node.js v16+
-- MongoDB instance (local, Docker, or cloud)
+- Node.js v20+
+- MongoDB instance (local or Docker)
+- **Dapr v1.16.2+** (required - no fallback mode)
+- Docker (for infrastructure: RabbitMQ, Redis, OTEL Collector, Jaeger)
+
+### Quick Start
+
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+2. **Start infrastructure** (MongoDB, RabbitMQ, Redis, OTEL Collector, Jaeger):
+   ```bash
+   cd ../../scripts/docker-compose
+   docker-compose -f docker-compose.infrastructure.yml up -d
+   docker-compose -f docker-compose.services.yml up user-mongodb -d
+   ```
+
+3. **Run the service with Dapr**:
+   ```bash
+   # Using run script (recommended)
+   ./run.sh      # Linux/Mac
+   .\run.ps1     # Windows
+
+   # Or using npm
+   npm run dev   # Development with auto-reload
+   npm start     # Production mode
+   ```
+
+4. **Access the service**:
+   - Service API: `http://localhost:1002/api`
+   - Dapr sidecar: `http://localhost:3502`
+   - Health check: `http://localhost:3502/v1.0/invoke/user-service/method/api/health`
+   - Jaeger tracing UI: `http://localhost:16686`
 
 ### Environment Variables
 
-Create a `.env` file in the root with the following variables:
+Secrets are managed via **Dapr Secret Store** (`.dapr/components/secrets.yaml`).
 
-```env
-PORT=1002
+Create a `.dapr/secrets.json` file:
 
-# MongoDB connection variables
-MONGODB_CONNECTION_SCHEME=mongodb
-MONGODB_HOST=localhost
-MONGODB_PORT=27017
-MONGODB_USERNAME=
-MONGODB_PASSWORD=
-MONGODB_DB_NAME=user-service-db
-MONGODB_DB_PARAMS=
-
-# Logging configuration
-LOG_LEVEL=info
-LOG_TO_CONSOLE=true
-LOG_TO_FILE=false
-LOG_FILE_PATH=user-service.log
-
-# OpenTelemetry tracing config (optional, for local dev)
-OTEL_SERVICE_NAME=user-service
-OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
-
+```json
+{
+  "MONGODB_CONNECTION_STRING": "mongodb://localhost:27018/user_service_db",
+  "JWT_SECRET": "your-super-secret-jwt-key-change-in-production"
+}
 ```
+
+Configuration is handled by `src/core/config.js` with sensible defaults for local development.
 
 ---
 
