@@ -28,7 +28,7 @@
         "--app-id", "user-service",
         "--app-port", "1002",
         "--dapr-http-port", "3502",
-        "--dapr-grpc-port", "50003",
+        "--dapr-grpc-port", "50002",
         "--resources-path", ".dapr/components",
         "--config", ".dapr/config.yaml",
         "--log-level", "warn"
