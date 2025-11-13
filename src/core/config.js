@@ -29,11 +29,6 @@ export default {
     filePath: process.env.LOG_FILE_PATH || './logs/user-service.log',
   },
 
-  observability: {
-    enableTracing: process.env.ENABLE_TRACING === 'true',
-    otlpEndpoint: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318/v1/traces',
-  },
-
   dapr: {
     httpPort: parseInt(process.env.DAPR_HTTP_PORT, 10) || 3502,
     host: process.env.DAPR_HOST || 'localhost',

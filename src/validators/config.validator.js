@@ -103,32 +103,6 @@ const validationRules = {
     validator: (value) => value && value.length >= 32,
     errorMessage: 'JWT_SECRET must be at least 32 characters long',
   },
-  JWT_EXPIRE: {
-    required: true,
-    validator: (value) => value && /^\d+[smhd]$/.test(value),
-    errorMessage: 'JWT_EXPIRE must be in format like 1h, 24h, 7d, etc.',
-  },
-
-  // CORS Configuration
-  CORS_ORIGINS: {
-    required: true,
-    validator: (value) => {
-      if (!value) {
-        return false;
-      }
-      const origins = value.split(',').map((o) => o.trim());
-      return origins.every((origin) => {
-        if (origin === '*') return true;
-        try {
-          new URL(origin);
-          return true;
-        } catch {
-          return false;
-        }
-      });
-    },
-    errorMessage: 'CORS_ORIGINS must be a comma-separated list of valid URLs or *',
-  },
 
   // Logging Configuration
   LOG_LEVEL: {

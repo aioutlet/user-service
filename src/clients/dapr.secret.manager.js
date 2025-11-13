@@ -1,7 +1,6 @@
 /**
  * Dapr Secret Management Service
  * Provides secret management using Dapr's secret store building block.
- * Falls back to environment variables if Dapr is not available.
  *
  * NOTE: Environment variables are loaded in server.js before this module is imported
  */
@@ -12,35 +11,22 @@ import config from '../core/config.js';
 
 class DaprSecretManager {
   constructor() {
-    this.environment = config.service.nodeEnv;
-    this.daprHost = process.env.DAPR_HOST || '127.0.0.1';
-    this.daprPort = process.env.DAPR_HTTP_PORT || '3502';
-
-    // Use appropriate secret store based on environment
-    if (this.environment === 'production') {
-      this.secretStoreName = 'azure-keyvault-secret-store';
-    } else {
-      this.secretStoreName = 'local-secret-store';
-    }
+    this.daprHost = config.dapr.host;
+    this.daprPort = config.dapr.httpPort;
+    this.secretStoreName = 'secret-store';
 
     logger.info('Secret manager initialized', {
       event: 'secret_manager_init',
-      environment: this.environment,
       secretStore: this.secretStoreName,
     });
   }
 
   /**
-   * Get a secret value
+   * Get a secret value from Dapr secret store
    * @param {string} secretName - Name of the secret to retrieve
    * @returns {Promise<string|null>} Secret value or null if not found
-   *
-   * Priority:
-   * 1. Dapr secret store (if enabled and available)
-   * 2. Environment variable (fallback)
    */
   async getSecret(secretName) {
-    // Try Dapr secret store
     try {
       const client = new DaprClient({
         daprHost: this.daprHost,
@@ -77,30 +63,21 @@ class DaprSecretManager {
       }
 
       // If we get here, no value was found in Dapr
-      logger.warn('Secret not found in Dapr store', {
+      logger.error('Secret not found in Dapr store', {
         event: 'secret_not_found',
         secretName,
         store: this.secretStoreName,
       });
+      return null;
     } catch (error) {
-      logger.warn(`Failed to get secret from Dapr: ${error.message}`, {
+      logger.error(`Failed to get secret from Dapr: ${error.message}`, {
         event: 'secret_retrieval_error',
         secretName,
         error: error.message,
         store: this.secretStoreName,
       });
+      throw error;
     }
-
-    // Fallback to environment variable
-    const value = process.env[secretName];
-    if (value) {
-      logger.debug('Retrieved secret from environment (fallback)', {
-        event: 'secret_retrieved',
-        secretName,
-        source: 'env_fallback',
-      });
-    }
-    return value || null;
   }
 
   /**
@@ -141,15 +118,15 @@ class DaprSecretManager {
   }
 
   /**
-   * Get JWT configuration from secrets or environment variables
+   * Get JWT configuration from secrets
    * @returns {Promise<Object>} JWT configuration parameters
    */
   async getJwtConfig() {
-    const [secret, expire] = await Promise.all([this.getSecret('JWT_SECRET'), this.getSecret('JWT_EXPIRE')]);
+    const secret = await this.getSecret('JWT_SECRET');
 
     return {
       secret: secret || 'default-secret-key',
-      expire: expire || '24h',
+      expire: '24h',
     };
   }
 }
