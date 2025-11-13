@@ -28,7 +28,7 @@ const connectDB = async () => {
     // Connect to MongoDB with connection options
     const conn = await mongoose.connect(mongodb_uri, {
       maxPoolSize: 10,
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 1002,
       socketTimeoutMS: 45000,
       family: 4, // Force IPv4
     });

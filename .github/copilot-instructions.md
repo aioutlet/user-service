@@ -9,7 +9,7 @@ This file provides context and guidelines for AI coding assistants working on th
 **Key Characteristics:**
 
 - **Technology**: Node.js 18+, Express 5.1.0, MongoDB 8.18.0, Mongoose ODM
-- **Port**: 5000
+- **Port**: 1002
 - **Architecture Pattern**: Pure Publisher (using Dapr Pub/Sub)
 - **Database**: MongoDB (user data storage)
 - **Event Communication**: Dapr Pub/Sub (RabbitMQ backend)
@@ -525,7 +525,7 @@ const userSchema = new mongoose.Schema({
 
 ```env
 # Server
-PORT=5000
+PORT=1002
 NODE_ENV=development
 
 # MongoDB
@@ -714,7 +714,7 @@ GET / metrics; // Prometheus metrics
 
 ```bash
 docker build -t user-service:latest .
-docker run -p 5000:5000 --env-file .env user-service:latest
+docker run -p 1002:1002 --env-file .env user-service:latest
 ```
 
 ### Local Development
@@ -876,10 +876,10 @@ services:
       context: .
       dockerfile: Dockerfile.api
     ports:
-      - '5000:5000'
+      - '1002:1002'
     environment:
       - NODE_ENV=development
-      - PORT=5000
+      - PORT=1002
       - MONGODB_HOST=mongodb
       - MONGODB_PORT=27017
       - MONGODB_DB_NAME=user-service-db
@@ -894,7 +894,7 @@ services:
     networks:
       - aioutlet-network
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:5000/health']
+      test: ['CMD', 'curl', '-f', 'http://localhost:1002/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -908,7 +908,7 @@ services:
         '-app-id',
         'user-service',
         '-app-port',
-        '5000',
+        '1002',
         '-dapr-http-port',
         '3500',
         '-components-path',
@@ -966,7 +966,7 @@ Create `.env` file:
 
 ```env
 # Server
-PORT=5000
+PORT=1002
 NODE_ENV=development
 
 # MongoDB
@@ -997,7 +997,7 @@ docker run -d -p 27017:27017 --name mongodb mongo:8.0
 docker run -d -p 5672:5672 -p 15672:15672 --name rabbitmq rabbitmq:3-management
 
 # Start Dapr sidecar (separate terminal)
-dapr run --app-id user-service --app-port 5000 --dapr-http-port 3500 --components-path ./components
+dapr run --app-id user-service --app-port 1002 --dapr-http-port 3500 --components-path ./components
 ```
 
 ### 4. Run User Service
@@ -1009,10 +1009,10 @@ npm run dev  # Starts with nodemon (auto-reload)
 ### 5. Verify Setup
 
 ```bash
-curl http://localhost:5000/health
+curl http://localhost:1002/health
 # Expected: { "status": "healthy", ... }
 
-curl http://localhost:5000/version
+curl http://localhost:1002/version
 # Expected: { "version": "1.0.0", ... }
 ```
 
@@ -1153,7 +1153,7 @@ mongoose.connect(MONGODB_URI, {
   maxPoolSize: 10, // Max connections
   minPoolSize: 2, // Min connections
   maxIdleTimeMS: 30000, // Close idle connections after 30s
-  serverSelectionTimeoutMS: 5000,
+  serverSelectionTimeoutMS: 1002,
 });
 ```
 

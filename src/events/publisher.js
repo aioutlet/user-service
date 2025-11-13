@@ -8,13 +8,8 @@ import config from '../core/config.js';
 
 // Lazy initialization of Dapr client
 let daprClient = null;
-const daprEnabled = (process.env.DAPR_ENABLED || 'true').toLowerCase() === 'true';
 
 function getDaprClient() {
-  if (!daprEnabled) {
-    return null;
-  }
-
   if (!daprClient) {
     daprClient = new DaprClient({
       daprHost: config.dapr.host,

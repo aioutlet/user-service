@@ -774,7 +774,7 @@ export default {
 };
         'X-Correlation-ID': event.correlationId,
       },
-      timeout: 5000, // 5 second timeout
+      timeout: 1002, // 5 second timeout
     });
 
     logger.info('Event published successfully', null, {
@@ -859,7 +859,7 @@ User Service is called by other internal services using **Dapr Service Invocatio
 └──────────────────────┘              └──────────────────────┘
          │                                      │
          │ 2. Service Discovery                 │ 3. Forward to App
-         │    (find user-service)               │    localhost:5000
+         │    (find user-service)               │    localhost:1002
          │                                      │
          └──────────────────────────────────────┘
                     4. Return Response
@@ -942,7 +942,7 @@ async function validateToken(token) {
 
 #### Benefits of Dapr Service Invocation
 
-1. **Service Discovery**: No need to hard-code URLs (e.g., `http://user-service:5000`)
+1. **Service Discovery**: No need to hard-code URLs (e.g., `http://user-service:1002`)
 2. **mTLS**: Automatic mutual TLS encryption between services
 3. **Retries**: Built-in retry logic with exponential backoff
 4. **Timeouts**: Configurable timeout handling
@@ -1698,7 +1698,7 @@ mongoose.connect(MONGODB_URI, {
 
 ```env
 # Server
-PORT=5000
+PORT=1002
 NODE_ENV=production
 
 # MongoDB
@@ -1745,11 +1745,11 @@ RUN npm ci --only=production
 COPY . .
 
 # Expose port
-EXPOSE 5000
+EXPOSE 1002
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s \
-  CMD node -e "require('http').get('http://localhost:5000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); });"
+  CMD node -e "require('http').get('http://localhost:1002/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); });"
 
 # Start application
 CMD ["node", "src/server.js"]
@@ -1776,7 +1776,7 @@ spec:
         - name: user-service
           image: aioutlet/user-service:1.0.0
           ports:
-            - containerPort: 5000
+            - containerPort: 1002
           env:
             - name: NODE_ENV
               value: 'production'
@@ -1795,13 +1795,13 @@ spec:
           livenessProbe:
             httpGet:
               path: /health/live
-              port: 5000
+              port: 1002
             initialDelaySeconds: 15
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /health/ready
-              port: 5000
+              port: 1002
             initialDelaySeconds: 10
             periodSeconds: 5
 ```

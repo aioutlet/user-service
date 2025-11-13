@@ -27,7 +27,7 @@ describe('Environment Configuration', () => {
 
   describe('Server Configuration', () => {
     it('should have valid PORT or use default', () => {
-      const port = process.env.PORT || '3002';
+      const port = process.env.PORT || '1002';
       const portNum = parseInt(port, 10);
       expect(portNum).toBeGreaterThan(0);
       expect(portNum).toBeLessThan(65536);

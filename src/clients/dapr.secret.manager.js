@@ -12,7 +12,6 @@ import config from '../core/config.js';
 
 class DaprSecretManager {
   constructor() {
-    this.daprEnabled = (process.env.DAPR_ENABLED || 'true').toLowerCase() === 'true';
     this.environment = config.service.nodeEnv;
     this.daprHost = process.env.DAPR_HOST || '127.0.0.1';
     this.daprPort = process.env.DAPR_HTTP_PORT || '3502';
@@ -26,7 +25,6 @@ class DaprSecretManager {
 
     logger.info('Secret manager initialized', {
       event: 'secret_manager_init',
-      daprEnabled: this.daprEnabled,
       environment: this.environment,
       secretStore: this.secretStoreName,
     });
@@ -42,19 +40,6 @@ class DaprSecretManager {
    * 2. Environment variable (fallback)
    */
   async getSecret(secretName) {
-    // If Dapr is disabled, use environment variables
-    if (!this.daprEnabled) {
-      const value = process.env[secretName];
-      if (value) {
-        logger.debug('Retrieved secret from environment', {
-          event: 'secret_retrieved',
-          secretName,
-          source: 'env',
-        });
-      }
-      return value || null;
-    }
-
     // Try Dapr secret store
     try {
       const client = new DaprClient({

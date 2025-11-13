@@ -283,7 +283,7 @@ The service publishes the following events via Dapr Pub/Sub:
 
 ### 4.1 Base URL
 
-- **Local Development**: `http://localhost:5000`
+- **Local Development**: `http://localhost:1002`
 - **Production**: `https://api.aioutlet.com/user-service`
 
 ### 4.2 API Endpoints
@@ -1029,7 +1029,7 @@ All errors follow a standardized format:
 **Test Scenarios:**
 
 - Load test: 1000 req/s sustained for 10 minutes
-- Stress test: Ramp up to 5000 req/s
+- Stress test: Ramp up to 1002 req/s
 - Spike test: Sudden traffic increase
 - Soak test: 500 req/s for 4 hours
 
@@ -1068,7 +1068,7 @@ All errors follow a standardized format:
 
 ```env
 # Server
-PORT=5000
+PORT=1002
 NODE_ENV=production
 
 # MongoDB
@@ -1108,7 +1108,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production
 COPY . .
-EXPOSE 5000
+EXPOSE 1002
 CMD ["node", "src/server.js"]
 ```
 
@@ -1120,7 +1120,7 @@ services:
   user-service:
     build: .
     ports:
-      - '5000:5000'
+      - '1002:1002'
     environment:
       - NODE_ENV=production
       - MONGODB_HOST=mongodb
@@ -1129,7 +1129,7 @@ services:
       - dapr-sidecar
       - rabbitmq
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:5000/health']
+      test: ['CMD', 'curl', '-f', 'http://localhost:1002/health']
       interval: 10s
       timeout: 3s
       retries: 3
@@ -1142,7 +1142,7 @@ services:
         '-app-id',
         'user-service',
         '-app-port',
-        '5000',
+        '1002',
         '-dapr-http-port',
         '3500',
         '-components-path',
@@ -1175,7 +1175,7 @@ spec:
         - name: user-service
           image: aioutlet/user-service:1.0.0
           ports:
-            - containerPort: 5000
+            - containerPort: 1002
           env:
             - name: NODE_ENV
               value: 'production'
@@ -1194,13 +1194,13 @@ spec:
           livenessProbe:
             httpGet:
               path: /health/live
-              port: 5000
+              port: 1002
             initialDelaySeconds: 15
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /health/ready
-              port: 5000
+              port: 1002
             initialDelaySeconds: 10
             periodSeconds: 5
 ```

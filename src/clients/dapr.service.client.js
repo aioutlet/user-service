@@ -3,20 +3,15 @@
  * Provides utilities for Dapr service invocation, state management, and secrets
  */
 import { DaprClient, CommunicationProtocolEnum } from '@dapr/dapr';
-import config from './config.js';
-import logger from './logger.js';
+import config from '../core/config.js';
+import logger from '../core/logger.js';
 
 class DaprClientHelper {
   constructor() {
     this.client = null;
-    this.daprEnabled = (process.env.DAPR_ENABLED || 'true').toLowerCase() === 'true';
   }
 
   getClient() {
-    if (!this.daprEnabled) {
-      throw new Error('Dapr is disabled. Set DAPR_ENABLED=true to use Dapr features.');
-    }
-
     if (!this.client) {
       this.client = new DaprClient({
         daprHost: config.dapr.host,

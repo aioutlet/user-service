@@ -72,7 +72,7 @@ src/
 Create a `.env` file in the root with the following variables:
 
 ```env
-PORT=5000
+PORT=1002
 
 # MongoDB connection variables
 MONGODB_CONNECTION_SCHEME=mongodb

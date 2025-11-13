@@ -39,9 +39,9 @@ async function checkDatabaseHealth() {
     // Create a separate connection for health checking
     connection = mongoose.createConnection(mongoURI, {
       maxPoolSize: 1,
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 5000,
-      connectTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 1002,
+      socketTimeoutMS: 1002,
+      connectTimeoutMS: 1002,
     });
 
     // Wait for connection to be established using promise-based approach

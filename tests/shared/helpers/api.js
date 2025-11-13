@@ -153,7 +153,7 @@ export async function del(url, options = {}) {
 /**
  * Check service health
  */
-export async function checkHealth(serviceUrl, timeout = 5000) {
+export async function checkHealth(serviceUrl, timeout = 1002) {
   try {
     const response = await axios.get(`${serviceUrl}/health`, { timeout });
     return response.status === 200;
