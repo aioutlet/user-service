@@ -13,7 +13,7 @@ class DaprSecretManager {
   constructor() {
     this.daprHost = config.dapr.host;
     this.daprPort = config.dapr.httpPort;
-    this.secretStoreName = 'secret-store';
+    this.secretStoreName = 'local-secret-store';
 
     logger.info('Secret manager initialized', {
       event: 'secret_manager_init',
