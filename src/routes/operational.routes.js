@@ -5,8 +5,8 @@ const router = express.Router();
 
 // Health check endpoints
 router.get('/health', health);
-router.get('/health/ready', readiness);
-router.get('/health/live', liveness);
+router.get('/readiness', readiness);
+router.get('/liveness', liveness);
 router.get('/metrics', metrics);
 
 export default router;

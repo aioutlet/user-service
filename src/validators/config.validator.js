@@ -36,45 +36,6 @@ const validationRules = {
     errorMessage: 'VERSION must be in semantic version format (e.g., 1.0.0)',
   },
 
-  // Database Configuration - Individual MongoDB variables
-  MONGO_INITDB_ROOT_USERNAME: {
-    required: true,
-    validator: (value) => value && value.length > 0,
-    errorMessage: 'MONGO_INITDB_ROOT_USERNAME must be a non-empty string',
-  },
-  MONGO_INITDB_ROOT_PASSWORD: {
-    required: true,
-    validator: (value) => value && value.length > 0,
-    errorMessage: 'MONGO_INITDB_ROOT_PASSWORD must be a non-empty string',
-  },
-  MONGO_INITDB_DATABASE: {
-    required: true,
-    validator: (value) => value && value.length > 0,
-    errorMessage: 'MONGO_INITDB_DATABASE must be a non-empty string',
-  },
-  MONGODB_HOST: {
-    required: false,
-    validator: (value) => !value || value.length > 0,
-    errorMessage: 'MONGODB_HOST must be a non-empty string if provided',
-    default: 'localhost',
-  },
-  MONGODB_PORT: {
-    required: false,
-    validator: (value) => {
-      if (!value) return true;
-      const port = parseInt(value, 10);
-      return !isNaN(port) && port > 0 && port <= 65535;
-    },
-    errorMessage: 'MONGODB_PORT must be a valid port number if provided',
-    default: '27017',
-  },
-  MONGODB_AUTH_SOURCE: {
-    required: false,
-    validator: (value) => !value || value.length > 0,
-    errorMessage: 'MONGODB_AUTH_SOURCE must be a non-empty string if provided',
-    default: 'admin',
-  },
-
   // Dapr Configuration
   DAPR_HTTP_PORT: {
     required: false,
@@ -98,11 +59,8 @@ const validationRules = {
   },
 
   // Security Configuration
-  JWT_SECRET: {
-    required: true,
-    validator: (value) => value && value.length >= 32,
-    errorMessage: 'JWT_SECRET must be at least 32 characters long',
-  },
+  // NOTE: JWT_SECRET is fetched from Dapr Secret Store at runtime via getJwtConfig()
+  // Not validated here as it's not in process.env
 
   // Logging Configuration
   LOG_LEVEL: {
