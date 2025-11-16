@@ -4,7 +4,7 @@ import { getDatabaseConfig } from '../clients/index.js';
 
 const connectDB = async () => {
   try {
-    // Get database configuration from Dapr secret store (with fallback to env)
+    // Get database configuration from Dapr secret store
     const dbConfig = await getDatabaseConfig();
 
     // Force IPv4 by replacing 'localhost' with '127.0.0.1'
