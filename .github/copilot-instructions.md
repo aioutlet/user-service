@@ -1,103 +1,410 @@
 # Copilot Instructions for User Service
 
-This file provides context and guidelines for AI coding assistants working on the **user-service** microservice.
+**Service**: User management microservice for AIOutlet platform  
+**Stack**: Node.js 18+, Express 5.1.0, MongoDB 8.18.0, Mongoose 8.18.0  
+**Port**: 1002 | **Dapr HTTP**: 3502 | **Dapr gRPC**: 50003  
+**Pattern**: Pure Publisher (Dapr Pub/Sub → RabbitMQ)
 
-## Service Overview
-
-**User Service** is a foundational Node.js/Express microservice that manages user accounts, profiles, addresses, payment methods, wishlists, and preferences. It follows the **Pure Publisher** pattern for event-driven communication.
-
-**Key Characteristics:**
-
-- **Technology**: Node.js 18+, Express 5.1.0, MongoDB 8.18.0, Mongoose ODM
-- **Port**: 1002
-- **Architecture Pattern**: Pure Publisher (using Dapr Pub/Sub)
-- **Database**: MongoDB (user data storage)
-- **Event Communication**: Dapr Pub/Sub (RabbitMQ backend)
-- **Authentication**: JWT validation (tokens provided by auth-service)
-- **Dependencies**: MongoDB and Dapr
-
----
-
-## Project Structure
+## Architecture at a Glance
 
 ```
 src/
-├── controllers/          # Request handlers (user, admin, operational)
-├── database/            # MongoDB connection and configuration
-├── middlewares/         # Express middleware (auth, error, correlation)
-├── models/              # Mongoose schemas (User model)
-├── observability/       # Logging (Winston) and tracing (OpenTelemetry)
-├── routes/              # API route definitions
-├── schemas/             # Sub-schemas (Address, Payment, Wishlist, Preferences)
-├── services/            # Business logic and external clients
-│   ├── daprPublisher.js         # Dapr event publishing
-│   └── user.service.js          # User business logic
-├── types/               # TypeScript/JSDoc type definitions
-├── utils/               # Utility functions and helpers
-├── validators/          # Input validation logic
-├── app.js              # Express application setup
-└── server.js           # Server entry point
+├── core/              # Config, logging, errors (centralized utilities)
+├── events/            # Event publishing (CloudEvents via Dapr)
+├── clients/           # External integrations (Dapr client, secret manager)
+├── controllers/       # HTTP handlers (thin, delegate to services)
+├── services/          # Business logic (validation, data manipulation)
+├── models/            # Mongoose schemas (User model with subdocs)
+├── schemas/           # Reusable subdocuments (address, payment, wishlist, preferences)
+├── middlewares/       # Express middleware (auth, tracing, async, errors)
+├── validators/        # Input validation (email, password, phone)
+├── routes/            # Route definitions (map URLs to controllers)
+├── database/          # MongoDB connection setup
+├── app.js            # Express app configuration
+└── server.js         # Entry point (loads env → imports app)
+```
+
+**Critical flows**:
+- Secrets: Dapr Secret Store → env fallback (`src/clients/dapr.secret.manager.js`)
+- Events: Controllers → `src/events/publisher.js` → Dapr Pub/Sub → RabbitMQ
+- Auth: JWT (issued by auth-service) → `requireAuth` middleware → attach `req.user`
+- Tracing: `traceContext.middleware.js` → adds `req.traceId`/`req.spanId` → all logs/events
+
+---
+
+## Essential Patterns
+
+### 1. Event Publishing (Always Use Dapr)
+
+**Location**: `src/events/publisher.js` (NOT `src/services/daprPublisher.js`)
+
+```javascript
+import { publishUserCreated, publishUserUpdated } from '../events/publisher.js';
+
+// In controller after DB operation
+await publishUserCreated(user, req.traceId, req.ip, req.headers['user-agent']);
+```
+
+**Event format** (CloudEvents-compliant):
+```javascript
+{
+  specversion: '1.0',
+  type: 'com.aioutlet.user.created',
+  source: 'user-service',
+  id: `${Date.now()}-${random}`,
+  time: '2025-11-19T10:30:00Z',
+  datacontenttype: 'application/json',
+  data: { userId, email, firstName, ... },
+  metadata: { traceId, ipAddress, userAgent, environment }
+}
+```
+
+**Available publishers**: `publishUserCreated`, `publishUserUpdated`, `publishUserDeleted`, `publishUserLoggedIn`, `publishUserLoggedOut`
+
+**Never** import `amqplib` or call RabbitMQ directly - Dapr abstracts all broker communication.
+
+### 2. Controller Pattern
+
+```javascript
+import asyncHandler from '../middlewares/asyncHandler.js';
+import ErrorResponse from '../core/errors.js';
+import logger from '../core/logger.js';
+import { publishUserCreated } from '../events/publisher.js';
+
+export const createUser = asyncHandler(async (req, res, next) => {
+  // 1. Validate (use validators from src/validators/)
+  const validation = userValidator.validateUserData(req.body);
+  if (!validation.valid) {
+    return next(new ErrorResponse(validation.error, 400, validation.code));
+  }
+
+  // 2. Business logic
+  const user = await User.create(req.body);
+
+  // 3. Publish event (graceful - logs warning if Dapr unavailable)
+  await publishUserCreated(user, req.traceId, req.ip, req.headers['user-agent']);
+
+  // 4. Log with trace context
+  logger.info('User created successfully', null, {
+    operation: 'create_user',
+    userId: user._id.toString(),
+    traceId: req.traceId,
+  });
+
+  // 5. Response
+  res.status(201).json(user);
+});
+```
+
+**Key points**:
+- Use `asyncHandler` (auto-catches errors, calls `next(err)`)
+- Never throw raw errors - use `ErrorResponse(message, statusCode, code)`
+- Always include `traceId` in logs/events (from `req.traceId`)
+- Event publishing is **non-blocking** - service works even if Dapr is down
+
+### 3. Authentication & Authorization
+
+**JWT validation** (auth-service issues tokens, user-service validates):
+```javascript
+import { requireAuth, requireRoles, requireAdmin } from '../middlewares/auth.middleware.js';
+
+// Protected route
+router.get('/profile', requireAuth, getProfile);
+
+// Role-based access
+router.get('/admin/users', requireAuth, requireAdmin, listUsers);
+router.post('/premium-feature', requireAuth, requireRoles('premium', 'admin'), usePremium);
+```
+
+**Access user**: `req.user` (populated by `requireAuth`):
+```javascript
+const userId = req.user._id;    // from JWT
+const roles = req.user.roles;   // ['customer'] or ['admin']
+```
+
+**JWT secret** (from Dapr Secret Store or env fallback):
+```javascript
+import { getJwtConfig } from '../clients/index.js';
+const { secret } = await getJwtConfig(); // Cached after first call
+```
+
+### 4. Mongoose Models & Subdocuments
+
+**User model** (`src/models/user.model.js`) with embedded arrays:
+```javascript
+const userSchema = new mongoose.Schema({
+  email: { type: String, required: true, unique: true },
+  password: { type: String, minlength: 6 }, // Auto-hashed by pre-save hook
+  addresses: [addressSchema],               // Embedded subdocs
+  paymentMethods: [paymentSchema],
+  wishlist: [wishlistSchema],
+  preferences: preferencesSchema,           // Single subdoc
+  roles: { type: [String], enum: ['customer', 'admin'], default: ['customer'] },
+  isActive: { type: Boolean, default: true }
+}, { timestamps: true });
+
+// Pre-save hook: hash password if modified, handle audit fields
+userSchema.pre('save', async function(next) {
+  if (this.isModified('password') && !/^\$2[aby]\$/.test(this.password)) {
+    this.password = await bcrypt.hash(this.password, 12);
+  }
+  if (this.isNew && !this.createdBy) this.createdBy = 'SELF_REGISTRATION';
+  next();
+});
+```
+
+**Adding subdocuments**:
+```javascript
+user.addresses.push({ type: 'shipping', fullName: 'John Doe', ... });
+await user.save(); // Triggers validation
+```
+
+**Removing subdocuments**:
+```javascript
+user.addresses.id(addressId).remove();
+await user.save();
+```
+
+**Always exclude password** from responses:
+```javascript
+const user = await User.findById(userId).select('-password');
+```
+
+### 5. Configuration & Secrets
+
+**Non-sensitive config** (`src/core/config.js`):
+```javascript
+import config from '../core/config.js';
+const port = config.service.port;              // 1002
+const daprPort = config.dapr.httpPort;         // 3502
+const logLevel = config.logging.level;         // 'debug'
+```
+
+**Sensitive secrets** (Dapr Secret Store → env fallback):
+```javascript
+import { getDatabaseConfig, getJwtConfig } from '../clients/index.js';
+
+const dbConfig = await getDatabaseConfig();    // { host, port, username, password, database }
+const jwtConfig = await getJwtConfig();        // { secret, expire }
+```
+
+**Environment variables** (`.env`):
+```env
+PORT=1002
+DAPR_HTTP_PORT=3502
+DAPR_PUBSUB_NAME=user-pubsub
+MONGODB_HOST=localhost
+MONGODB_PORT=27018
+JWT_SECRET=your-secret-key
+LOG_LEVEL=debug
+```
+
+**No `DAPR_ENABLED` flag** - service always tries Dapr first, falls back gracefully.
+
+### 6. Logging & Tracing
+
+**Structured logging** (Winston):
+```javascript
+import logger from '../core/logger.js';
+
+logger.info('User created', null, {
+  operation: 'create_user',
+  userId: user._id.toString(),
+  traceId: req.traceId,        // From traceContext.middleware
+  spanId: req.spanId
+});
+
+logger.error('Failed to publish event', null, {
+  operation: 'event_publish',
+  eventType: 'user.created',
+  error: err.message,
+  traceId: req.traceId
+});
+```
+
+**Trace context** (automatic):
+- `traceContext.middleware.js` extracts/generates `req.traceId` and `req.spanId`
+- Use in all logs and event metadata for distributed tracing
+- Header: `x-trace-id` (incoming) or generated UUID
+
+**Never log**: passwords (even hashed), JWT tokens, full credit card numbers, SSNs
+
+---
+
+## Common Tasks
+
+### Add a new endpoint
+1. Define route in `src/routes/user.routes.js`:
+   ```javascript
+   router.post('/addresses', requireAuth, addAddress);
+   ```
+2. Create controller in `src/controllers/user.address.controller.js` (use `asyncHandler`)
+3. Add validation in `src/validators/user.address.validator.js`
+4. Publish event if state changes
+5. Write tests in `tests/unit/controllers/`
+
+### Add a new event type
+1. Add function to `src/events/publisher.js`:
+   ```javascript
+   export async function publishUserEmailVerified(userId, email, traceId) {
+     const client = getDaprClient();
+     const eventData = { /* CloudEvents format */ };
+     await client.pubsub.publish(config.dapr.pubsubName, 'user.email_verified', eventData);
+     logger.info('Published user.email_verified event', null, { userId, traceId });
+   }
+   ```
+2. Call from controller after operation completes
+
+### Testing
+**Jest with ES modules** (`jest.config.js` uses `transform: {}`):
+```bash
+npm test                  # All tests
+npm run test:unit         # Unit tests only
+npm run test:integration  # Integration tests
+npm run test:coverage     # Coverage report
+```
+
+**Unit test pattern** (mock external dependencies):
+```javascript
+import User from '../../../src/models/user.model.js';
+import { publishUserCreated } from '../../../src/events/publisher.js';
+
+jest.mock('../../../src/models/user.model.js');
+jest.mock('../../../src/events/publisher.js');
+
+describe('createUser', () => {
+  it('should create user and publish event', async () => {
+    User.create.mockResolvedValue({ _id: '123', email: 'test@example.com' });
+    publishUserCreated.mockResolvedValue(undefined);
+
+    // Execute controller logic...
+    expect(User.create).toHaveBeenCalled();
+    expect(publishUserCreated).toHaveBeenCalledWith(
+      expect.objectContaining({ email: 'test@example.com' }),
+      expect.any(String), // traceId
+      expect.any(String), // ipAddress
+      expect.any(String)  // userAgent
+    );
+  });
+});
 ```
 
 ---
 
-## Key Patterns & Conventions
+## Development Workflow
 
-### 1. Event Publishing (Dapr Pub/Sub)
+### Local setup
+```bash
+npm install
+# Start infrastructure (MongoDB, RabbitMQ)
+cd ../../scripts/docker-compose
+docker-compose -f docker-compose.infrastructure.yml up -d
 
-**ALWAYS use the Dapr SDK for event publishing:**
+# Run with Dapr sidecar
+./dapr.sh        # Linux/Mac
+.\dapr.ps1       # Windows
 
-```javascript
-import daprPublisher from '../services/daprPublisher.js';
-
-// Publish user.created event
-await daprPublisher.publishUserCreated(user, correlationId, ipAddress, userAgent);
+# Or run without Dapr (direct mode)
+./run.sh         # Linux/Mac
+.\run.ps1        # Windows
+# Or: npm run dev (starts with Dapr - see package.json)
 ```
 
-**Event Format:**
+### VS Code debugging
+**`.vscode/launch.json`** has two configs:
+- "Debug User Service (Direct)" - no Dapr
+- "Debug User Service (with Dapr)" - full stack
 
-```javascript
-{
-  source: 'user-service',
-  eventType: 'user.created',
-  eventVersion: '1.0',
-  eventId: 'evt-123-xyz',
-  timestamp: '2025-10-24T10:30:00Z',
-  correlationId: 'corr-abc-def',
-  data: { userId, email, firstName, lastName },
-  metadata: { environment, ipAddress, userAgent }
-}
+**`.vscode/tasks.json`** has:
+- "Kill Port 1002" - cleanup before debug
+- "Start Dapr Sidecar" - manual Dapr start
+- "Stop Dapr Sidecar" - cleanup after debug
+
+### API testing
+```bash
+# Health check
+curl http://localhost:1002/api/health
+
+# Via Dapr
+curl http://localhost:3502/v1.0/invoke/user-service/method/api/health
+
+# Create user
+curl -X POST http://localhost:1002/api/users \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"SecurePass123","firstName":"John"}'
 ```
 
-**Available Event Publishers:**
+---
 
-- `publishUserCreated(user, correlationId, ipAddress, userAgent)`
-- `publishUserUpdated(user, correlationId, updatedBy, ipAddress, userAgent)`
-- `publishUserDeleted(userId, correlationId)`
-- `publishUserLoggedIn(userId, email, correlationId)`
-- `publishUserLoggedOut(userId, email, correlationId)`
+## Key Differences from Documentation
 
-**❌ DON'T:**
+**Outdated references in docs** (use actual code):
+- ❌ `src/services/daprPublisher.js` → ✅ `src/events/publisher.js`
+- ❌ `req.correlationId` → ✅ `req.traceId` (trace context middleware)
+- ❌ `DAPR_ENABLED` env var → ✅ Removed (always uses Dapr, graceful fallback)
+- ❌ Dapr port 3500 → ✅ 3502 (user-service specific)
+- ❌ `src/observability/` → ✅ `src/core/logger.js` (centralized)
 
-```javascript
-import amqplib from 'amqplib'; // Never import message broker libraries directly
-import axios from 'axios'; // Don't use HTTP to publish events
+**Project structure** (actual vs docs):
+```
+Actual:
+src/
+├── core/          ← Config, logger, errors
+├── events/        ← Event publishers
+├── clients/       ← Dapr clients, secret manager
+└── ...
+
+Docs say:
+src/
+├── observability/ ← Doesn't exist
+├── services/      ← Has user.service.js but NOT daprPublisher.js
+└── ...
 ```
 
-**✅ DO:**
+---
 
-```javascript
-import daprPublisher from '../services/daprPublisher.js';
-```
+## Requirements Reference
 
-### 2. Controller Pattern
+See `docs/PRD.md` for business requirements (REQ-1.x through REQ-9.x).  
+See `docs/ARCHITECTURE.md` for technical architecture details.
 
-All controllers use `asyncHandler` middleware for automatic error handling:
+**Mapping examples**:
+- REQ-1.1 (User Registration) → `POST /api/users` → `user.controller.js::createUser` → publishes `user.created`
+- REQ-3.1 (Add Address) → `POST /api/users/addresses` → `user.address.controller.js::addAddress` → subdocument push
+- REQ-9.1 (Admin List Users) → `GET /api/admin/users` → requires `admin` role → `admin.controller.js::listUsers`
 
+---
+
+## Troubleshooting
+
+**"Cannot find module 'C:\\...\\src\\clients\\config.js'"**  
+→ Import from `../core/config.js` not `./config.js` (check import paths)
+
+**Event publishing fails silently**  
+→ Expected behavior - check logs for warning. Service continues without Dapr.
+
+**JWT validation fails with "Invalid token"**  
+→ Ensure auth-service issued token with correct secret. Check `JWT_SECRET` env var.
+
+**Password not hashing**  
+→ Pre-save hook checks if already hashed (`/^\$2[aby]\$/`). Don't manually hash.
+
+**MongoDB connection fails**  
+→ Check `MONGODB_HOST`, `MONGODB_PORT` in `.env`. Default: `localhost:27018`
+
+---
+
+**Quick reference imports**:
 ```javascript
 import asyncHandler from '../middlewares/asyncHandler.js';
-import ErrorResponse from '../utils/ErrorResponse.js';
-import logger from '../observability/index.js';
+import ErrorResponse from '../core/errors.js';
+import logger from '../core/logger.js';
+import config from '../core/config.js';
+import User from '../models/user.model.js';
+import { requireAuth, requireAdmin } from '../middlewares/auth.middleware.js';
+import { publishUserCreated } from '../events/publisher.js';
+import { getDatabaseConfig, getJwtConfig } from '../clients/index.js';
+```
 
 export const createUser = asyncHandler(async (req, res, next) => {
   const { email, password, firstName, lastName } = req.body;

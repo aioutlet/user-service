@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import logger from '../core/logger.js';
-import { getDatabaseConfig } from '../clients/index.js';
+import { getDatabaseConfig } from '../core/secretManager.js';
 
 const connectDB = async () => {
   try {

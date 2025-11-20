@@ -1,19 +1,21 @@
 /**
- * Dapr Secret Management Service
+ * Secret Management Service
  * Provides secret management using Dapr's secret store building block.
  *
  * NOTE: Environment variables are loaded in server.js before this module is imported
  */
 
 import { DaprClient } from '@dapr/dapr';
-import logger from '../core/logger.js';
-import config from '../core/config.js';
+import logger from './logger.js';
+import config from './config.js';
 
-class DaprSecretManager {
+class SecretManager {
   constructor() {
     this.daprHost = config.dapr.host;
     this.daprPort = config.dapr.httpPort;
-    this.secretStoreName = 'local-secret-store';
+    // Component name is generic - actual implementation (local file, Azure Key Vault, AWS Secrets Manager)
+    // is determined by the Dapr component YAML configuration, not by code
+    this.secretStoreName = 'secret-store';
 
     logger.info('Secret manager initialized', {
       event: 'secret_manager_init',
@@ -35,34 +37,18 @@ class DaprSecretManager {
 
       const response = await client.secret.get(this.secretStoreName, secretName);
 
-      // Handle different response types
-      if (response && typeof response === 'object') {
-        // Response is typically an object like { secretName: 'value' }
+      // Dapr returns an object like { secretName: 'value' }
+      if (response && secretName in response) {
         const value = response[secretName];
-        if (value !== undefined && value !== null) {
-          logger.debug('Retrieved secret from Dapr', {
-            event: 'secret_retrieved',
-            secretName,
-            source: 'dapr',
-            store: this.secretStoreName,
-          });
-          return String(value);
-        }
-
-        // If not found by key, try getting first value
-        const values = Object.values(response);
-        if (values.length > 0 && values[0] !== undefined) {
-          logger.debug('Retrieved secret from Dapr (first value)', {
-            event: 'secret_retrieved',
-            secretName,
-            source: 'dapr',
-            store: this.secretStoreName,
-          });
-          return String(values[0]);
-        }
+        logger.debug('Retrieved secret from Dapr', {
+          event: 'secret_retrieved',
+          secretName,
+          source: 'dapr',
+          store: this.secretStoreName,
+        });
+        return String(value);
       }
 
-      // If we get here, no value was found in Dapr
       logger.error('Secret not found in Dapr store', {
         event: 'secret_not_found',
         secretName,
@@ -78,19 +64,6 @@ class DaprSecretManager {
       });
       throw error;
     }
-  }
-
-  /**
-   * Get multiple secrets at once
-   * @param {string[]} secretNames - List of secret names to retrieve
-   * @returns {Promise<Object>} Object mapping secret names to their values
-   */
-  async getMultipleSecrets(secretNames) {
-    const secrets = {};
-    for (const name of secretNames) {
-      secrets[name] = await this.getSecret(name);
-    }
-    return secrets;
   }
 
   /**
@@ -119,6 +92,7 @@ class DaprSecretManager {
 
   /**
    * Get JWT configuration from secrets
+   * Only JWT_SECRET is truly secret - algorithm and expiration are just config.
    * @returns {Promise<Object>} JWT configuration parameters
    */
   async getJwtConfig() {
@@ -126,13 +100,16 @@ class DaprSecretManager {
 
     return {
       secret: secret || 'default-secret-key',
-      expire: '24h',
+      algorithm: process.env.JWT_ALGORITHM || 'HS256',
+      expiration: process.env.JWT_EXPIRATION || '3600',
+      issuer: process.env.JWT_ISSUER || 'auth-service',
+      audience: process.env.JWT_AUDIENCE || 'aioutlet-platform',
     };
   }
 }
 
 // Global instance
-export const secretManager = new DaprSecretManager();
+export const secretManager = new SecretManager();
 
 // Helper functions for easy access
 export const getDatabaseConfig = () => secretManager.getDatabaseConfig();

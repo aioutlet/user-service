@@ -2,6 +2,10 @@
 # Run User Service with Dapr sidecar
 # Usage: .\run.ps1
 
+# Set terminal title - use both methods to ensure it persists
+$host.ui.RawUI.WindowTitle = "User Service"
+[Console]::Title = "User Service"
+
 Write-Host "Starting User Service with Dapr..." -ForegroundColor Green
 Write-Host "Service will be available at: http://localhost:1002" -ForegroundColor Cyan
 Write-Host "Dapr HTTP endpoint: http://localhost:3502" -ForegroundColor Cyan

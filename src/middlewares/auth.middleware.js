@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import User from '../models/user.model.js';
 import logger from '../core/logger.js';
 import ErrorResponse from '../core/errors.js';
-import { getJwtConfig } from '../clients/index.js';
+import { getJwtConfig } from '../core/secretManager.js';
 
 // Cache JWT config to avoid repeated Dapr calls
 let jwtConfigCache = null;
@@ -40,7 +40,12 @@ export async function requireAuth(req, res, next) {
     // Verify token
     let decoded;
     try {
-      decoded = jwt.verify(token, secret);
+      // Get full JWT config for validation options
+      const jwtConfig = jwtConfigCache || await getJwtConfig();
+      decoded = jwt.verify(token, secret, {
+        issuer: jwtConfig.issuer,
+        audience: jwtConfig.audience
+      });
     } catch (err) {
       logger.warn('requireAuth: Invalid token', { error: err });
       return next(new ErrorResponse('Unauthorized: Invalid or expired token', 401));
@@ -147,9 +152,13 @@ export async function optionalAuth(req, res, next) {
 
     // Get JWT secret from Dapr secret store
     const secret = await getJwtSecret();
+    const jwtConfig = jwtConfigCache || await getJwtConfig();
 
     try {
-      const decoded = jwt.verify(token, secret);
+      const decoded = jwt.verify(token, secret, {
+        issuer: jwtConfig.issuer,
+        audience: jwtConfig.audience
+      });
       req.user = {
         _id: decoded.id,
         email: decoded.email,

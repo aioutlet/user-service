@@ -3,8 +3,8 @@
  * Provides utilities for Dapr metadata operations
  */
 import { DaprClient, CommunicationProtocolEnum } from '@dapr/dapr';
-import config from '../core/config.js';
-import logger from '../core/logger.js';
+import config from './config.js';
+import logger from './logger.js';
 
 class DaprClientService {
   constructor() {
